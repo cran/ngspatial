@@ -8,9 +8,9 @@ using namespace std;
 using namespace arma;
     
 double bmse(const vec& vals)
-{	
-	int N = vals.size();
-	double result;
+{   
+    int N = vals.size();
+    double result;
     if (N < 10)
         result = -1;
     else
@@ -28,27 +28,27 @@ double bmse(const vec& vals)
         double sigmahatsq = b * as_scalar(sum(pow((Ys - muhat), 2))) / (a - 1);
         result = sqrt(sigmahatsq / N);
     }
-	return result;
+    return result;
 }
 
 bool isLessTol(const mat& vals, double tol)
 {
-	int p = vals.n_cols;
-	bool lessTol = true;
-	for (int i = 0; i < p; i++)
-	{	
-		if (bmse(vals.col(i)) > tol || bmse(vals.col(i)) < 0)
-		{
-			lessTol = false;
-			break;
-		}
-	}
-	return lessTol;
+    int p = vals.n_cols;
+    bool lessTol = true;
+    for (int i = 0; i < p; i++)
+    {   
+        if (bmse(vals.col(i)) > tol || bmse(vals.col(i)) < 0)
+        {
+            lessTol = false;
+            break;
+        }
+    }
+    return lessTol;
 }
 
 vec rautologistic(const mat& X, const mat& A, const vec& theta)
 {
-	colvec beta = theta.subvec(0, theta.size() - 2);
+    colvec beta = theta.subvec(0, theta.size() - 2);
     double eta = theta[theta.size() - 1];
     int n = X.n_rows;
     colvec Xbeta = X * beta;
@@ -101,9 +101,7 @@ vec rautologistic(const mat& X, const mat& A, const vec& theta)
 
 RCPP_MODULE(perfsampler)
 {
-    function("rautologistic", &rautologistic, \
-		     "");
-	function("bmse", &bmse, \
-		     "");
+    function("rautologistic", &rautologistic, "");
+    function("bmse", &bmse, "");
 }
 

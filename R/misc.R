@@ -52,50 +52,22 @@ adjacency.matrix = function(m, n = NULL)
 
 hpd = function(x, alpha = 0.05)
 {
-	n = length(x)
-	m = round(n * alpha)
-	x = sort(x)
-	y = x[(n - m + 1):n] - x[1:m]
-	z = min(y)
-	k = which(y == z)[1]
-	c(x[k], x[n - m + k])
+    n = length(x)
+    m = round(n * alpha)
+    x = sort(x)
+    y = x[(n - m + 1):n] - x[1:m]
+    z = min(y)
+    k = which(y == z)[1]
+    c(x[k], x[n - m + k])
 }
 
 is.wholenumber = function(x, tol = .Machine$double.eps^0.5)
 {
-	abs(x - round(x)) < tol
+    abs(x - round(x)) < tol
 }
 
 is.zero = function(x, tol = .Machine$double.eps^0.5)
 {
-	abs(x) < tol
-}
-
-ngspatial.existOrFill = function(list, names, values)
-{
-	for(i in 1:length(names))
-		if(! names[i] %in% names(list))
-			list = ngspatial.fillValues(list, names[i], values[i])
-		else
-		{
-			index = match(names[i], names(list))
-			list[index] = values[i]
-		}
-	list
-}
-
-ngspatial.fillValues = function(list, names, values)
-{
-	n = length(list)
-	k = length(names)
-	list[(n + 1):(n + k)] = values
-	names(list)[(n + 1):(n + k)] = names
-	list
-}
-
-ngspatial.silent = function(list, elements)
-{
-	list[match(elements, names(list))] = NULL
-	list
+    abs(x) < tol
 }
 

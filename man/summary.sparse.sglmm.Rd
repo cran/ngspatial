@@ -23,12 +23,13 @@
 }
 \details{
   This function displays (1) the call to
-  \code{\link{sparse.sglmm}}, (2) a table of estimates, (3)
-  the DIC value for the fit, and (4) the size of the
-  posterior sample. Each row of the table of estimates
-  shows the estimated regression coefficient, the
-  \eqn{(1-\alpha)100\%}{(1-\alpha)100\%} HPD interval for
-  the coefficient, and the Monte Carlo standard error.
+  \code{\link{sparse.sglmm}}, (2) the values of the
+  hyperparameters and tuning parameters, (3) a table of
+  estimates, (4) the DIC value for the fit, and (5) the
+  number of posterior samples. Each row of the table of
+  estimates shows an estimated regression coefficient, the
+  HPD interval for the coefficient, and the Monte Carlo
+  standard error.
 }
 \seealso{
   \code{\link{sparse.sglmm}}

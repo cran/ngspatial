@@ -2,12 +2,9 @@
 \alias{autologistic}
 \title{Fit a centered autologistic model using maximum pseudolikelihood estimation or MCMC for Bayesian inference.}
 \usage{
-  autologistic(formula, data, A, method = c("pl", "bayes"),
-    optit = 1000, model = TRUE, x = FALSE, y = FALSE,
-    type = c("SOCK", "PVM", "MPI", "NWS"), bootit = 1000,
-    parallel = TRUE, nodes, trainit = 1e+05, tol = 0.01,
-    minit = 10000, maxit = 1e+06, sigma = 1e+06,
-    eta.max = 2)
+  autologistic(formula, data, A, method = c("PL", "Bayes"),
+    model = TRUE, x = FALSE, y = FALSE, verbose = FALSE,
+    control = list())
 }
 \arguments{
   \item{formula}{an object of class \code{\link{formula}}:
@@ -20,60 +17,41 @@
   \code{environment(formula)}, typically the environment
   from which \code{autologistic} is called.}
 
-  \item{A}{the adjacency matrix for the underlying graph,
-  which is assumed to be undirected and free of loops and
-  parallel edges.}
+  \item{A}{the adjacency matrix for the underlying graph.}
 
   \item{method}{the method to use for inference.
-  \dQuote{\code{pl}} (the default) enables maximum
-  pseudolikelihood estimation, and \dQuote{\code{bayes}}
+  \dQuote{\code{PL}} (the default) enables maximum
+  pseudolikelihood estimation, and \dQuote{\code{Bayes}}
   enables Bayesian inference.}
 
-  \item{optit}{the maximum number of iterations to be used
-  by \code{\link{optim}} in obtaining the MPLE estimate of
-  \eqn{\theta}. Defaults to 1,000.}
-
-  \item{parallel}{(PL) a boolean variable indicating
-  whether to use parallel bootstrapping, which requires the
-  \pkg{snow} package. Defaults to \code{TRUE}, in which
-  case the number of nodes must be supplied.}
-
-  \item{nodes}{(PL) the number of nodes to use for parallel
-  bootstrapping.}
-
-  \item{type}{(PL) the type of cluster to use for parallel
-  bootstrapping. The available types are
-  \dQuote{\code{SOCK}}, \dQuote{\code{PVM}},
-  \dQuote{\code{MPI}}, and \dQuote{\code{NWS}}. The default
-  type is \dQuote{\code{SOCK}}.}
-
-  \item{bootit}{(PL) the desired size of the bootstrap
-  sample. Defaults to 1,000.}
-
-  \item{trainit}{(Bayes) the number of iterations to use
-  for estimating the posterior covariance matrix. Defaults
-  to 100,000.}
-
-  \item{tol}{(Bayes) a tolerance. If all Monte Carlo
-  standard errors are smaller than \code{tol}, no more
-  samples are drawn from the posterior. Defaults to 0.01.}
-
-  \item{minit}{(Bayes) the minimum sample size. This should
-  be large enough to permit accurate estimation of Monte
-  Carlo standard errors. Defaults to 10,000.}
-
-  \item{maxit}{(Bayes) the maximum sample size. Sampling
-  from the posterior terminates when all Monte Carlo
-  standard errors are smaller than \code{tol} or when
-  \code{maxit} samples have been drawn, whichever happens
-  first. Defaults to 1,000,000.}
-
-  \item{sigma}{(Bayes) a scalar or a \eqn{(p-1)}-vector
-  providing the variance(s) of the spherical normal prior
-  for \eqn{\beta}. Defaults to 1,000,000.}
-
-  \item{eta.max}{(Bayes) the upper limit for \eqn{\eta}.
-  Defaults to 2. The lower limit is 0.}
+  \item{control}{a list of the following control
+  parameters.  \describe{ \item{\code{confint}}{ (PL) the
+  method for computing confidence intervals. The possible
+  values are \dQuote{\code{sandwich}} (the default),
+  \dQuote{\code{bootstrap}}, and \dQuote{\code{none}}.}
+  \item{\code{sigma}}{ (Bayes) the common standard
+  deviation for \eqn{\beta}'s prior distribution. Defaults
+  to 1,000.} \item{\code{eta.max}}{ (Bayes) the right
+  endpoint for \eqn{\eta}'s prior distribution. Defaults to
+  2.} \item{\code{bootit}}{ (PL) the size of the bootstrap
+  sample. This applies when \code{confint} is
+  \dQuote{\code{sandwich}} or \dQuote{\code{bootstrap}},
+  since samples from the fitted model are needed in both
+  cases. Defaults to 1,000.} \item{\code{trainit}}{ (Bayes)
+  the length of the training run. Defaults to 100,000.}
+  \item{\code{minit}}{ (Bayes) the minimum number of
+  posterior samples. Defaults to 100,000.}
+  \item{\code{maxit}}{ (Bayes) the maximum number of
+  posterior samples. Defaults to 1,000,000.}
+  \item{\code{tol}}{ (Bayes) the tolerance. Defaults to
+  0.01.} \item{\code{parallel}}{ (PL) a logical value
+  indicating whether to parallelize the bootstrap. This
+  defaults to \code{TRUE} if the \pkg{snow} package is
+  installed.} \item{\code{type}}{ (PL) the cluster type,
+  one of \dQuote{\code{SOCK}} (default),
+  \dQuote{\code{PVM}}, \dQuote{\code{MPI}}, or
+  \dQuote{\code{NWS}}.} \item{\code{nodes}}{ (PL) the
+  number of slave nodes to create.}}}
 
   \item{model}{a logical value indicating whether the model
   frame should be included as a component of the returned
@@ -86,6 +64,11 @@
   \item{y}{a logical value indicating whether the response
   vector used in the fitting process should be returned as
   a component of the returned value.}
+
+  \item{verbose}{a logical value indicating whether to
+  print various messages to the screen, including progress
+  updates when \code{method} is \dQuote{\code{Bayes}}.
+  Defaults to \code{FALSE}.}
 }
 \value{
   \code{autologistic} returns an object of class
@@ -96,29 +79,28 @@
   predictors by the inverse of the link function.}
   \item{linear.predictors}{the linear fit on link scale.}
   \item{residuals}{the response residuals.} \item{iter}{the
-  size of the bootstrap/posterior sample.} \item{sample}{an
-  \code{iter} by \eqn{p} matrix containing the
-  bootstrap/posterior samples.} \item{mcse}{a
-  \eqn{p}-vector of Monte Carlo standard errors.}
-  \item{V}{(Bayes) the estimated posterior covariance
-  matrix from the training run.} \item{accept}{(Bayes) the
+  size of the bootstrap/posterior sample.}
+  \item{sample}{(where relevant) an \code{iter} by \eqn{p}
+  matrix containing the bootstrap/posterior samples.}
+  \item{mcse}{(where relevant) a \eqn{p}-vector of Monte
+  Carlo standard errors.} \item{S}{(where relevant) the
+  estimated sandwich matrix.} \item{accept}{(Bayes) the
   acceptance rate for the MCMC sampler.} \item{y}{if
   requested (the default), the \code{y} vector used.}
   \item{X}{if requested, the model matrix.} \item{model}{if
   requested (the default), the model frame.}
   \item{call}{the matched call.} \item{formula}{the formula
   supplied.} \item{method}{the method used for inference.}
-  \item{convergence}{an integer code. The code has value 0
-  if \code{\link{optim}} succeeded in optimizing the
-  pseudolikelihood. Possible error codes are 1 and 10. The
-  former indicates that the iteration limit was reached
-  before optimization completed. The latter indicates that
-  the Nelder-Mead simplex degenerated.} \item{message}{a
-  character string to go along with \code{convergence}
-  equal to 1 or 10.} \item{terms}{the \code{\link{terms}}
-  object used.} \item{data}{the \code{data} argument.}
-  \item{xlevels}{(where relevant) a record of the levels of
-  the factors used in fitting.}
+  \item{convergence}{the integer code returned by
+  \code{\link{optim}} subsequent to optimizing the
+  pseudolikelihood.} \item{message}{a character string to
+  go along with \code{convergence}.} \item{terms}{the
+  \code{\link{terms}} object used.} \item{data}{the
+  \code{data} argument.} \item{xlevels}{(where relevant) a
+  record of the levels of the factors used in fitting.}
+  \item{control}{a list containing the names and values of
+  the control parameters.} \item{value}{the value of the
+  negative log pseudolikelihood at its minimum.}
 }
 \description{
   Fit a centered autologistic model using maximum
@@ -145,8 +127,9 @@
   Maximum pseudolikelihood estimation sidesteps the
   intractability of \eqn{c(\theta)} by maximizing the
   product of the conditional likelihoods.  Confidence
-  intervals are then obtained using a parametric bootstrap.
-  The bootstrap datasets are generated by perfect sampling
+  intervals are then obtained using a parametric bootstrap
+  or a normal approximation, i.e., sandwich estimation. The
+  bootstrap datasets are generated by perfect sampling
   (\code{\link{rautologistic}}).  The bootstrap samples can
   be generated in parallel using the \pkg{snow} package.
   \cr \cr Bayesian inference is obtained using the
@@ -154,27 +137,72 @@
   The auxiliary variables are generated by perfect
   sampling.  \cr \cr The prior distributions are (1)
   zero-mean normal with independent coordinates for
-  \eqn{\beta}, and (2) uniform for \eqn{\eta}.  The
-  variance(s) for the normal prior can be supplied by the
-  user. The default is a common variance of 1,000,000. The
-  uniform prior has support [0, 2] by default, but the
-  right endpoint can be supplied (as \code{eta.max}) by the
-  user.  \cr \cr The posterior covariance matrix of
-  \eqn{\theta} is estimated using samples obtained during a
-  training run. The default number of iterations for the
-  training run is 100,000, but this can be controlled by
-  the user (via argument \code{trainit}). The estimated
-  covariance matrix is then used as the proposal variance
-  for a Metropolis-Hastings random walk. The proposal
+  \eqn{\beta}, and (2) uniform for \eqn{\eta}.  The common
+  standard deviation for the normal prior can be supplied
+  by the user as control parameter \code{sigma}. The
+  default is 1,000. The uniform prior has support [0, 2] by
+  default, but the right endpoint can be supplied (as
+  control parameter \code{eta.max}) by the user.  \cr \cr
+  The posterior covariance matrix of \eqn{\theta} is
+  estimated using samples obtained during a training run.
+  The default number of iterations for the training run is
+  100,000, but this can be controlled by the user (via
+  parameter \code{trainit}). The estimated covariance
+  matrix is then used as the proposal variance for a
+  Metropolis-Hastings random walk. The proposal
   distribution is normal. The posterior samples obtained
   during the second run are used for inference. The length
-  of the run can be controlled by the user via arguments
+  of the run can be controlled by the user via parameters
   \code{minit}, \code{maxit}, and \code{tol}. The first
   determines the minimum number of iterations. If
   \code{minit} has been reached, the sampler will terminate
   when \code{maxit} is reached or all Monte Carlo standard
   errors are smaller than \code{tol}, whichever happens
-  first.
+  first. The default values for \code{minit}, \code{maxit},
+  and \code{tol} are 100,000; 1,000,000; and 0.01,
+  respectively.
+}
+\examples{
+\dontrun{
+
+# This is the continuation of the example given for function rautologistic.
+
+# Find the MPLE, and do not compute confidence intervals.
+
+fit = autologistic(Z ~ X - 1, A = A, control = list(confint = "none"))
+summary(fit)
+
+# Compute confidence intervals based on the normal approximation. Estimate the "filling" in the
+# sandwich matrix using a parallel parametric bootstrap, where the computation is distributed
+# across six cores on the host workstation.
+
+fit = autologistic(Z ~ X - 1, A = A, verbose = TRUE,
+                   control = list(confint = "sandwich", nodes = 6))
+summary(fit)
+
+# Compute confidence intervals based on a parallel parametric bootstrap. Use a bootstrap sample
+# of size 500, and distribute the computation across six cores on the host workstation.
+
+fit = autologistic(Z ~ X - 1, A = A, verbose = TRUE,
+                  control = list(confint = "bootstrap", bootit = 500, nodes = 6))
+summary(fit)
+
+# Make some level plots of the residuals.
+
+dev.new()
+levelplot(residuals(fit) ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
+dev.new()
+levelplot(residuals(fit, type = "pearson") ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
+dev.new()
+levelplot(residuals(fit, type = "response") ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
+
+# Do MCMC for Bayesian inference. The length of the training run will be 10,000, and
+# the length of the subsequent inferential run will be at least 10,000.
+
+fit = autologistic(Z ~ X - 1, A = A, verbose = TRUE, method = "Bayes",
+                  control = list(trainit = 10000, minit = 10000, sigma = 1000))
+summary(fit)
+}
 }
 \references{
   Caragea, P. and Kaiser, M. (2009) Autologistic models

@@ -23,15 +23,12 @@
 }
 \details{
   This function displays (1) the call to
-  \code{\link{autologistic}}, (2) a table of estimates, and
-  (3) the size of the bootstrap/posterior samples. Each row
-  of the table of estimates shows the estimated regression
-  coefficient, the \eqn{(\alpha/2)100\%}{(\alpha/2)100\%}
-  and \eqn{(1-\alpha/2)100\%}{(1-\alpha/2)100\%} bootstrap
-  quantiles for the MPLE coefficient or
-  \eqn{(1-\alpha)100\%}{(1-\alpha)100\%} HPD interval for
-  the Bayesian coefficient, and the Monte Carlo standard
-  error.
+  \code{\link{autologistic}}, (2) the values of the control
+  parameters, (3) a table of estimates, and (4) the size of
+  the bootstrap/posterior sample. Each row of the table of
+  estimates shows a parameter estimate, the confidence or
+  HPD interval for the parameter, and, where applicable,
+  the Monte Carlo standard error.
 }
 \seealso{
   \code{\link{autologistic}}

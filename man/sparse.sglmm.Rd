@@ -5,7 +5,7 @@
   sparse.sglmm(formula, family = gaussian, data, offset, A,
     q = 50, tol = 0.01, minit = 10000, maxit = 1e+06,
     tune = list(), hyper = list(), model = TRUE, x = FALSE,
-    y = FALSE)
+    y = FALSE, verbose = FALSE)
 }
 \arguments{
   \item{formula}{an object of class \code{\link{formula}}:
@@ -35,9 +35,7 @@
   specified their sum is used. See
   \code{\link{model.offset}}.}
 
-  \item{A}{the adjacency matrix for the underlying graph,
-  which is assumed to be undirected and free of loops and
-  parallel edges.}
+  \item{A}{the adjacency matrix for the underlying graph.}
 
   \item{q}{the number of Moran eigenvectors to use. The
   default is 50. See `Details' for more information.}
@@ -61,7 +59,8 @@
   deviations for the \eqn{\gamma} and \eqn{\delta}
   proposals, respectively.}
 
-  \item{hyper}{(where relevant) a list containing
+  \item{hyper}{a list containing \code{sigma.b}, the prior
+  standard deviation for \eqn{\beta}, and (where relevant)
   \code{a.h} and \code{b.h}, the parameters of the gamma
   prior for \eqn{\tau_h}.}
 
@@ -76,6 +75,10 @@
   \item{y}{a logical value indicating whether the response
   vector used in the fitting process should be returned as
   a component of the returned value.}
+
+  \item{verbose}{a logical value indicating whether to
+  print MCMC progress to the screen. Defaults to
+  \code{FALSE}.}
 }
 \value{
   \code{sparse.sglmm} returns an object of class
@@ -111,29 +114,32 @@
   Monte Carlo standard error for \eqn{\tau_h}.}
   \item{D.bar}{the goodness of fit component of the DIC.}
   \item{pD}{the penalty component of the DIC.}
-  \item{dic}{the deviance information criterion\eqn{,
-  \bar{D}+pD}{}.} \item{beta.accept}{the acceptance rate
-  for \eqn{\beta}.} \item{gamma.accept}{the acceptance rate
-  for \eqn{\gamma}.} \item{delta.accept}{(where relevant)
-  the acceptance rate for \eqn{\delta}.} \item{y}{if
-  requested (the default), the \code{y} vector used.}
-  \item{X}{if requested, the model matrix.} \item{M}{if
-  requested, the matrix of Moran eigenvectors.}
-  \item{eigen.values}{if requested, the spectrum of the
-  Moran operator.} \item{model}{if requested (the default),
-  the model frame.} \item{call}{the matched call.}
-  \item{formula}{the formula supplied.} \item{terms}{the
-  \code{\link{terms}} object used.} \item{data}{the
-  \code{data} argument.} \item{offset}{the offset vector
-  used.} \item{xlevels}{(where relevant) a record of the
-  levels of the factors used in fitting.}
+  \item{dic}{the deviance information criterion.}
+  \item{beta.accept}{the acceptance rate for \eqn{\beta}.}
+  \item{gamma.accept}{the acceptance rate for
+  \eqn{\gamma}.} \item{delta.accept}{(where relevant) the
+  acceptance rate for \eqn{\delta}.} \item{y}{if requested
+  (the default), the \code{y} vector used.} \item{X}{if
+  requested, the model matrix.} \item{M}{if requested, the
+  matrix of Moran eigenvectors.} \item{eigen.values}{if
+  requested, the spectrum of the Moran operator.}
+  \item{hyper}{a list containing the names and values of
+  the hyperparameters.} \item{tune}{a list containing the
+  names and values of the tuning parameters.}
+  \item{model}{if requested (the default), the model
+  frame.} \item{call}{the matched call.} \item{formula}{the
+  formula supplied.} \item{terms}{the \code{\link{terms}}
+  object used.} \item{data}{the \code{data} argument.}
+  \item{offset}{the offset vector used.}
+  \item{xlevels}{(where relevant) a record of the levels of
+  the factors used in fitting.}
 }
 \description{
   Fit a sparse SGLMM.
 }
 \details{
   This function fits the sparse areal SGLMM of Hughes and
-  Haran (2012). The first stage of the model is
+  Haran (2013). The first stage of the model is
   \deqn{g(\mu_i)=x_i^\prime\beta+m_i^\prime\gamma\hspace{1
   cm}(i=1,\dots,n)}{g(\mu_i)=x_i'\beta+m_i'\gamma
   (i=1,\dots,n)} or, in vectorized form,
@@ -149,8 +155,9 @@
   \gamma'M'QM\gamma'),} where \eqn{\tau_s} is a smoothing
   parameter and \eqn{Q} is the graph Laplacian.\cr\cr The
   prior for \eqn{\beta} is spherical \eqn{p}-variate normal
-  with mean zero and common variance 1,000,000. The prior
-  for \eqn{\tau_s} is gamma with parameters 0.5 and
+  with mean zero and common standard deviation
+  \code{sigma.b}, which defaults to 1,000. The prior for
+  \eqn{\tau_s} is gamma with parameters 0.5 and
   2,000.\cr\cr When the response is normally distributed,
   the identity link is assumed, in which case the first
   stage is \deqn{\mu=X\beta+M\gamma+M\delta,} where
@@ -179,11 +186,24 @@
   \code{sigma.h}.\cr\cr If the response is normally
   distributed, all updates are Gibbs updates.
 }
+\examples{
+\dontrun{
+
+# This is the continuation of the example given for function rautologistic.
+
+# Fit a sparse SGLMM with Bernoulli first stage. Use 100 Moran eigenvectors. Stop sampling when
+# the number of iterations reaches 100,000 or all MCSEs have fallen below the default tolerance
+# of 0.01, whichever comes first.
+
+fit = sparse.sglmm(Z ~ X - 1, family = binomial, A = A, q = 100, maxit = 100000, verbose = TRUE)
+summary(fit)
+}
+}
 \references{
   Hughes, J. and Haran, M. (2013) Dimension reduction and
   alleviation of confounding for spatial generalized linear
   mixed models. \emph{Journal of the Royal Statistical
-  Society, Series B}, in press.
+  Society, Series B}, \bold{75}(1), 139--159.
 }
 \seealso{
   \code{\link{residuals.sparse.sglmm}},
