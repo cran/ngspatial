@@ -87,11 +87,11 @@
   link function.} \item{linear.predictors}{the linear fit
   on link scale.} \item{residuals}{the response residuals.}
   \item{iter}{the size of the posterior sample.}
-  \item{beta.sample}{an \code{iter} x \eqn{p} matrix
+  \item{beta.sample}{an \code{iter} by \eqn{p} matrix
   containing the posterior samples for \eqn{\beta}.}
-  \item{gamma.sample}{an \code{iter} x \eqn{q} matrix
+  \item{gamma.sample}{an \code{iter} by \eqn{q} matrix
   containing the posterior samples for \eqn{\gamma}.}
-  \item{delta.sample}{(where relevant) an \code{iter} x
+  \item{delta.sample}{(where relevant) an \code{iter} by
   \eqn{q} matrix containing the posterior samples for
   \eqn{\delta}.} \item{tau.s.sample}{a vector containing
   the posterior samples for \eqn{\tau_s}.}
@@ -109,10 +109,10 @@
   \item{tau.s.mcse}{the Monte Carlo standard error for
   \eqn{\tau_s}.} \item{tau.h.mcse}{(where relevant) the
   Monte Carlo standard error for \eqn{\tau_h}.}
-  \item{D.bar}{\eqn{\bar{D}}, the goodness of fit component
-  of the DIC.} \item{pD}{the penalty component of the DIC.}
-  \item{dic}{the deviance information criterion,
-  \eqn{\bar{D}+pD}.} \item{beta.accept}{the acceptance rate
+  \item{D.bar}{the goodness of fit component of the DIC.}
+  \item{pD}{the penalty component of the DIC.}
+  \item{dic}{the deviance information criterion\eqn{,
+  \bar{D}+pD}{}.} \item{beta.accept}{the acceptance rate
   for \eqn{\beta}.} \item{gamma.accept}{the acceptance rate
   for \eqn{\gamma}.} \item{delta.accept}{(where relevant)
   the acceptance rate for \eqn{\delta}.} \item{y}{if
@@ -145,7 +145,7 @@
   stage, i.e., the prior for \eqn{\gamma}, is
   \deqn{p(\gamma\mid\tau_s)\propto\tau_s^{q/2}\exp\left(-\frac{\tau_s}{2}\gamma^\prime
   M^\prime QM\gamma\right),}{p(\gamma | \tau_s)
-  proportional to \tau_s^(q/2)\exp(-\tau_s/2
+  proportional to \tau_s^(q/2)exp(-\tau_s/2
   \gamma'M'QM\gamma'),} where \eqn{\tau_s} is a smoothing
   parameter and \eqn{Q} is the graph Laplacian.\cr\cr The
   prior for \eqn{\beta} is spherical \eqn{p}-variate normal
@@ -180,7 +180,7 @@
   distributed, all updates are Gibbs updates.
 }
 \references{
-  Hughes, J. and Haran, M. (2012) Dimension reduction and
+  Hughes, J. and Haran, M. (2013) Dimension reduction and
   alleviation of confounding for spatial generalized linear
   mixed models. \emph{Journal of the Royal Statistical
   Society, Series B}, in press.

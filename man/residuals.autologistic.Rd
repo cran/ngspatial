@@ -1,0 +1,29 @@
+\name{residuals.autologistic}
+\alias{residuals.autologistic}
+\title{Extract model residuals.}
+\usage{
+  \method{residuals}{autologistic} (object,
+    type = c("deviance", "pearson", "response"), ...)
+}
+\arguments{
+  \item{object}{an object of class \code{autologistic},
+  typically the result of a call to
+  \code{\link{autologistic}}.}
+
+  \item{type}{the type of residuals that should be
+  returned. The alternatives are \dQuote{\code{deviance}}
+  (default), \dQuote{\code{pearson}}, and
+  \dQuote{\code{response}}.}
+
+  \item{\dots}{additional arguments.}
+}
+\value{
+  A vector of residuals.
+}
+\description{
+  Extract model residuals.
+}
+\seealso{
+  \code{\link{autologistic}}, \code{\link{residuals.glm}}
+}
+

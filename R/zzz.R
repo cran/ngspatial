@@ -13,18 +13,18 @@
 #
 ######################################################################
 
-#' @import utils
+#' @import batchmeans Rcpp utils
 
 .onLoad = function(libname, pkgname)
 {
-    # library.dynam("ngspatial", package = pkgname, lib.loc = libname)
+    loadRcppModules(direct = FALSE)
     temp = packageDescription("ngspatial")
     msg = paste(temp$Package, ": ", temp$Title, "\n", "Version ", temp$Version,
                 " created on ", temp$Date, ".\n", sep = "")
     msg = paste(msg, "copyright (c) 2012, John Hughes, University of Minnesota\n",
-#"                    Xiaohui Cui, University of Minnesota\n",
+"                    Xiaohui Cui, University of Minnesota\n",
                 sep = "")
-    msg = paste(msg, 'For citation information, type citation("ngspatial").\n')
-    msg = paste(msg, 'Type help("ngspatial-package") to get started.\n')
+    msg = paste(msg, 'For citation information, type citation("ngspatial").\n', sep = "")
+    msg = paste(msg, 'Type help("ngspatial-package") to get started.\n', sep = "")
     packageStartupMessage(msg)
 }

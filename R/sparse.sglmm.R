@@ -1,7 +1,4 @@
 
-#' @importFrom lawstat symmetry.test
-#' @import batchmeans
-
 sparse.sglmm.fit.binomial = function(Y, X, A, M, family, beta.start, V, offset, tol, minit, maxit, sigma.s)
 {
 	iterations = minit
@@ -21,10 +18,15 @@ sparse.sglmm.fit.binomial = function(Y, X, A, M, family, beta.start, V, offset, 
     if (is.null(offset))
         offset = rep(0, n)
     start = 1
+    k = 1
+    five.pct = round(0.05 * maxit, 0)
     repeat
     {
         for (j in (start + 1):(start + iterations))
         {
+	        k = k + 1
+	        if (k %% five.pct == 0)
+	            cat("Progress => ", round(k / maxit * 100, 0), "%\n", sep = "")
 	        b = beta[j - 1, ]
 	        b_ = V %*% rnorm(p) + b
 	        gam = gamma[j - 1, ]
@@ -102,41 +104,20 @@ sparse.sglmm.fit.binomial = function(Y, X, A, M, family, beta.start, V, offset, 
     for (j in 1:p)
     {
     	temp = bm(beta[, j])
+        coefficients[j] = temp$est
     	beta.mcse[j] = temp$se
-    	test = symmetry.test(beta[, j])
-    	if (test$p.value > 0.05)
-    	    coefficients[j] = temp$est
-    	else
-    	{
-    		dens = density(beta[, j])
-    		coefficients[j] = dens$x[which.max(dens$y)]
-        }
     }
     gamma.est = numeric(q)
     gamma.mcse = numeric(q)
     for (j in 1:q)
     {
     	temp = bm(gamma[, j])
+        gamma.est[j] = temp$est
     	gamma.mcse[j] = temp$se
-    	test = symmetry.test(gamma[, j])
-    	if (test$p.value > 0.05)
-    	    gamma.est[j] = temp$est
-    	else
-    	{
-    		dens = density(gamma[, j])
-    		gamma.est[j] = dens$x[which.max(dens$y)]
-        }
     }
     temp = bm(tau.s)
+    tau.s.est = temp$est
     tau.s.mcse = temp$se
-    test = symmetry.test(tau.s)
-    if (test$p.value > 0.05)
-    	tau.s.est = temp$est
-    else
-    {
-    	dens = density(tau.s)
-    	tau.s.est = dens$x[which.max(dens$y)]
-    }
     linear.predictors = offset + X %*% coefficients + M %*% gamma.est
     iter = length(tau.s)
     p.hat = linkinv(linear.predictors)
@@ -187,11 +168,16 @@ sparse.sglmm.fit.gaussian = function(Y, X, A, M, beta.start, offset, tol, minit,
     if (is.null(offset))
         offset = rep(0, n)
     start = 1
+    k = 1
+    five.pct = round(0.05 * maxit, 0)
     K = diag(1 / 1000000, p)
     repeat
     {
         for (j in (start + 1):(start + iterations))
         {
+	        k = k + 1
+	        if (k %% five.pct == 0)
+	            cat("Progress => ", round(k / maxit * 100, 0), "%\n", sep = "")
 	        V = solve(K + tau.h[j - 1] * XtX)
 	        mu = V %*% (tau.h[j - 1] * t(X) %*% (Y - M %*% gamma[j - 1, ]))
 	        beta[j, ] = t(chol(V)) %*% rnorm(p) + mu
@@ -266,51 +252,23 @@ sparse.sglmm.fit.gaussian = function(Y, X, A, M, beta.start, offset, tol, minit,
     for (j in 1:p)
     {
     	temp = bm(beta[, j])
+        coefficients[j] = temp$est
     	beta.mcse[j] = temp$se
-    	test = symmetry.test(beta[, j])
-    	if (test$p.value > 0.05)
-    	    coefficients[j] = temp$est
-    	else
-    	{
-    		dens = density(beta[, j])
-    		coefficients[j] = dens$x[which.max(dens$y)]
-        }
     }
     gamma.est = numeric(q)
     gamma.mcse = numeric(q)
     for (j in 1:q)
     {
     	temp = bm(gamma[, j])
+        gamma.est[j] = temp$est
     	gamma.mcse[j] = temp$se
-    	test = symmetry.test(gamma[, j])
-    	if (test$p.value > 0.05)
-    	    gamma.est[j] = temp$est
-    	else
-    	{
-    		dens = density(gamma[, j])
-    		gamma.est[j] = dens$x[which.max(dens$y)]
-        }
     }
     temp = bm(tau.s)
+    tau.s.est = temp$est
     tau.s.mcse = temp$se
-    test = symmetry.test(tau.s)
-    if (test$p.value > 0.05)
-    	tau.s.est = temp$est
-    else
-    {
-    	dens = density(tau.s)
-    	tau.s.est = dens$x[which.max(dens$y)]
-    }
     temp = bm(tau.h)
+    tau.h.est = temp$est
     tau.h.mcse = temp$se
-    test = symmetry.test(tau.h)
-    if (test$p.value > 0.05)
-    	tau.h.est = temp$est
-    else
-    {
-    	dens = density(tau.h)
-    	tau.h.est = dens$x[which.max(dens$y)]
-    }
     linear.predictors = offset + X %*% coefficients + M %*% gamma.est
     iter = length(tau.s)
     v = numeric(iter)
@@ -368,12 +326,17 @@ sparse.sglmm.fit.poisson = function(Y, X, A, M, family, beta.start, V, offset, t
     if (is.null(offset))
         offset = rep(0, n)
     start = 1
+    k = 1
+    five.pct = round(0.05 * maxit, 0)
     repeat
     {
     	if (hetero)
     	{
             for (j in (start + 1):(start + iterations))
             {
+	            k = k + 1
+		        if (k %% five.pct == 0)
+		            cat("Progress => ", round(k / maxit * 100, 0), "%\n", sep = "")
 	            b = beta[j - 1, ]
 	            b_ = V %*% rnorm(p) + b
 	            gam = gamma[j - 1, ]
@@ -414,6 +377,9 @@ sparse.sglmm.fit.poisson = function(Y, X, A, M, family, beta.start, V, offset, t
         {
         	for (j in (start + 1):(start + iterations))
             {
+	            k = k + 1
+		        if (k %% five.pct == 0)
+		            cat("Progress => ", round(k / maxit * 100, 0), "%\n", sep = "")
 	            b = beta[j - 1, ]
 	            b_ = V %*% rnorm(p) + b
 	            gam = gamma[j - 1, ]
@@ -509,41 +475,20 @@ sparse.sglmm.fit.poisson = function(Y, X, A, M, family, beta.start, V, offset, t
     for (j in 1:p)
     {
     	temp = bm(beta[, j])
+        coefficients[j] = temp$est
     	beta.mcse[j] = temp$se
-    	test = symmetry.test(beta[, j])
-    	if (test$p.value > 0.05)
-    	    coefficients[j] = temp$est
-    	else
-    	{
-    		dens = density(beta[, j])
-    		coefficients[j] = dens$x[which.max(dens$y)]
-        }
     }
     gamma.est = numeric(q)
     gamma.mcse = numeric(q)
     for (j in 1:q)
     {
     	temp = bm(gamma[, j])
+        gamma.est[j] = temp$est
     	gamma.mcse[j] = temp$se
-    	test = symmetry.test(gamma[, j])
-    	if (test$p.value > 0.05)
-    	    gamma.est[j] = temp$est
-    	else
-    	{
-    		dens = density(gamma[, j])
-    		gamma.est[j] = dens$x[which.max(dens$y)]
-        }
     }
     temp = bm(tau.s)
+    tau.s.est = temp$est
     tau.s.mcse = temp$se
-    test = symmetry.test(tau.s)
-    if (test$p.value > 0.05)
-    	tau.s.est = temp$est
-    else
-    {
-    	dens = density(tau.s)
-    	tau.s.est = dens$x[which.max(dens$y)]
-    }
     if (hetero)
     {
     	delta.est = numeric(q)
@@ -551,26 +496,12 @@ sparse.sglmm.fit.poisson = function(Y, X, A, M, family, beta.start, V, offset, t
         for (j in 1:q)
         {
     	    temp = bm(delta[, j])
+            delta.est[j] = temp$est
     	    delta.mcse[j] = temp$se
-    	    test = symmetry.test(delta[, j])
-    	    if (test$p.value > 0.05)
-    	        delta.est[j] = temp$est
-    	    else
-    	    {
-    		    dens = density(delta[, j])
-    		    delta.est[j] = dens$x[which.max(dens$y)]
-            }
         }
     	temp = bm(tau.h)
+        tau.h.est = temp$est
         tau.h.mcse = temp$se
-        test = symmetry.test(tau.h)
-        if (test$p.value > 0.05)
-    	    tau.h.est = temp$est
-        else
-        {
-    	    dens = density(tau.h)
-    	    tau.h.est = dens$x[which.max(dens$y)]
-        }
     }
     linear.predictors = offset + X %*% coefficients + M %*% gamma.est
     if (hetero)
@@ -612,7 +543,7 @@ sparse.sglmm.fit.poisson = function(Y, X, A, M, family, beta.start, V, offset, t
 
 #' Fit a sparse SGLMM.
 #'
-#' @details This function fits the sparse areal SGLMM of Hughes and Haran (2012). The first stage of the model is \deqn{g(\mu_i)=x_i^\prime\beta+m_i^\prime\gamma\hspace{1 cm}(i=1,\dots,n)}{g(\mu_i)=x_i'\beta+m_i'\gamma   (i=1,\dots,n)} or, in vectorized form, \deqn{g(\mu)=X\beta+M\gamma,} where \eqn{X} is the design matrix, \eqn{\beta} is a \eqn{p}-vector of regression coefficients, the columns of \eqn{M} are the first \eqn{q} eigenvectors of the Moran operator, and \eqn{\gamma} are spatial random effects.\cr\cr The second stage, i.e., the prior for \eqn{\gamma}, is \deqn{p(\gamma\mid\tau_s)\propto\tau_s^{q/2}\exp\left(-\frac{\tau_s}{2}\gamma^\prime M^\prime QM\gamma\right),}{p(\gamma | \tau_s) proportional to \tau_s^(q/2)\exp(-\tau_s/2 \gamma'M'QM\gamma'),} where \eqn{\tau_s} is a smoothing parameter and \eqn{Q} is the graph Laplacian.\cr\cr The prior for \eqn{\beta} is spherical \eqn{p}-variate normal with mean zero and common variance 1,000,000. The prior for \eqn{\tau_s} is gamma with parameters 0.5 and 2,000.\cr\cr When the response is normally distributed, the identity link is assumed, in which case the first stage is \deqn{\mu=X\beta+M\gamma+M\delta,} where \eqn{\delta} are heterogeneity random effects. When the response is Poisson distributed, heterogeneity random effects are optional. In any case, the prior on \eqn{\delta} is spherical \eqn{q}-variate normal with mean zero and common variance \eqn{1/\tau_h}. The prior for \eqn{\tau_h} is gamma with parameters \eqn{a_h} and \eqn{b_h}, the values of which are controlled by the user through argument \code{hyper}.\cr\cr If the response is Bernoulli or Poisson, \eqn{\beta} and \eqn{\gamma} are updated using Metropolis-Hastings random walks with normal proposals. The proposal covariance matrix for \eqn{\beta} is the estimated asymptotic covariance matrix from a \code{\link{glm}} fit to the data (see \code{\link{vcov}}). The proposal for \eqn{\gamma} is spherical normal with common standard deviation \code{sigma.s}.\cr\cr The updates for \eqn{\tau_s} and \eqn{\tau_h} are Gibbs updates irrespective of the response distribution.\cr\cr If the response is Poisson distributed and heterogeneity random effects are included, those random effects are updated using a Metropolis-Hastings random walk with a spherical normal proposal. The common standard deviation is \code{sigma.h}.\cr\cr If the response is normally distributed, all updates are Gibbs updates.
+#' @details This function fits the sparse areal SGLMM of Hughes and Haran (2012). The first stage of the model is \deqn{g(\mu_i)=x_i^\prime\beta+m_i^\prime\gamma\hspace{1 cm}(i=1,\dots,n)}{g(\mu_i)=x_i'\beta+m_i'\gamma   (i=1,\dots,n)} or, in vectorized form, \deqn{g(\mu)=X\beta+M\gamma,} where \eqn{X} is the design matrix, \eqn{\beta} is a \eqn{p}-vector of regression coefficients, the columns of \eqn{M} are the first \eqn{q} eigenvectors of the Moran operator, and \eqn{\gamma} are spatial random effects.\cr\cr The second stage, i.e., the prior for \eqn{\gamma}, is \deqn{p(\gamma\mid\tau_s)\propto\tau_s^{q/2}\exp\left(-\frac{\tau_s}{2}\gamma^\prime M^\prime QM\gamma\right),}{p(\gamma | \tau_s) proportional to \tau_s^(q/2)exp(-\tau_s/2 \gamma'M'QM\gamma'),} where \eqn{\tau_s} is a smoothing parameter and \eqn{Q} is the graph Laplacian.\cr\cr The prior for \eqn{\beta} is spherical \eqn{p}-variate normal with mean zero and common variance 1,000,000. The prior for \eqn{\tau_s} is gamma with parameters 0.5 and 2,000.\cr\cr When the response is normally distributed, the identity link is assumed, in which case the first stage is \deqn{\mu=X\beta+M\gamma+M\delta,} where \eqn{\delta} are heterogeneity random effects. When the response is Poisson distributed, heterogeneity random effects are optional. In any case, the prior on \eqn{\delta} is spherical \eqn{q}-variate normal with mean zero and common variance \eqn{1/\tau_h}. The prior for \eqn{\tau_h} is gamma with parameters \eqn{a_h} and \eqn{b_h}, the values of which are controlled by the user through argument \code{hyper}.\cr\cr If the response is Bernoulli or Poisson, \eqn{\beta} and \eqn{\gamma} are updated using Metropolis-Hastings random walks with normal proposals. The proposal covariance matrix for \eqn{\beta} is the estimated asymptotic covariance matrix from a \code{\link{glm}} fit to the data (see \code{\link{vcov}}). The proposal for \eqn{\gamma} is spherical normal with common standard deviation \code{sigma.s}.\cr\cr The updates for \eqn{\tau_s} and \eqn{\tau_h} are Gibbs updates irrespective of the response distribution.\cr\cr If the response is Poisson distributed and heterogeneity random effects are included, those random effects are updated using a Metropolis-Hastings random walk with a spherical normal proposal. The common standard deviation is \code{sigma.h}.\cr\cr If the response is normally distributed, all updates are Gibbs updates.
 #' @param formula an object of class \code{\link{formula}}: a symbolic description of the model to be fitted.
 #' @param family a description of the error distribution and link function to be used in the model. This can be a character string naming a family function, a family function, or the result of a call to a family function. (See \code{\link{family}} for details of family functions.) Supported families are \code{gaussian} (default), \code{binomial}, and \code{poisson}.
 #' @param data an optional data frame, list, or environment (or object coercible by \code{\link{as.data.frame}} to a data frame) containing the variables in the model. If not found in \code{data}, the variables are taken from \code{environment(formula)}, typically the environment from which \code{sparse.sglmm} is called.
@@ -633,9 +564,9 @@ sparse.sglmm.fit.poisson = function(Y, X, A, M, family, beta.start, V, offset, t
 #'         \item{linear.predictors}{the linear fit on link scale.}
 #'         \item{residuals}{the response residuals.}
 #'         \item{iter}{the size of the posterior sample.}
-#'         \item{beta.sample}{an \code{iter} x \eqn{p} matrix containing the posterior samples for \eqn{\beta}.}
-#'         \item{gamma.sample}{an \code{iter} x \eqn{q} matrix containing the posterior samples for \eqn{\gamma}.}
-#'         \item{delta.sample}{(where relevant) an \code{iter} x \eqn{q} matrix containing the posterior samples for \eqn{\delta}.}
+#'         \item{beta.sample}{an \code{iter} by \eqn{p} matrix containing the posterior samples for \eqn{\beta}.}
+#'         \item{gamma.sample}{an \code{iter} by \eqn{q} matrix containing the posterior samples for \eqn{\gamma}.}
+#'         \item{delta.sample}{(where relevant) an \code{iter} by \eqn{q} matrix containing the posterior samples for \eqn{\delta}.}
 #'         \item{tau.s.sample}{a vector containing the posterior samples for \eqn{\tau_s}.}
 #'         \item{tau.h.sample}{(where relevant) a vector containing the posterior samples for \eqn{\tau_h}.}
 #'         \item{gamma.est}{the estimate of \eqn{\gamma}.}
@@ -647,9 +578,9 @@ sparse.sglmm.fit.poisson = function(Y, X, A, M, family, beta.start, V, offset, t
 #'         \item{delta.mcse}{(where relevant) the Monte Carlo standard errors for \eqn{\delta}.}
 #'         \item{tau.s.mcse}{the Monte Carlo standard error for \eqn{\tau_s}.}
 #'         \item{tau.h.mcse}{(where relevant) the Monte Carlo standard error for \eqn{\tau_h}.}
-#'         \item{D.bar}{\eqn{\bar{D}}, the goodness of fit component of the DIC.}
+#'         \item{D.bar}{the goodness of fit component of the DIC.}
 #'         \item{pD}{the penalty component of the DIC.}
-#'         \item{dic}{the deviance information criterion, \eqn{\bar{D}+pD}.}
+#'         \item{dic}{the deviance information criterion\eqn{, \bar{D}+pD}{}.}
 #'         \item{beta.accept}{the acceptance rate for \eqn{\beta}.}
 #'         \item{gamma.accept}{the acceptance rate for \eqn{\gamma}.}
 #'         \item{delta.accept}{(where relevant) the acceptance rate for \eqn{\delta}.}
@@ -665,7 +596,7 @@ sparse.sglmm.fit.poisson = function(Y, X, A, M, family, beta.start, V, offset, t
 #'         \item{offset}{the offset vector used.}
 #'         \item{xlevels}{(where relevant) a record of the levels of the factors used in fitting.}
 #' @references
-#' Hughes, J. and Haran, M. (2012) Dimension reduction and alleviation of confounding for spatial generalized linear mixed models. \emph{Journal of the Royal Statistical Society, Series B}, in press.
+#' Hughes, J. and Haran, M. (2013) Dimension reduction and alleviation of confounding for spatial generalized linear mixed models. \emph{Journal of the Royal Statistical Society, Series B}, in press.
 #' @seealso \code{\link{residuals.sparse.sglmm}}, \code{\link{summary.sparse.sglmm}}, \code{\link{vcov.sparse.sglmm}}
 #' @export
 
@@ -729,6 +660,9 @@ sparse.sglmm = function(formula, family = gaussian, data, offset, A, q = 50, tol
     M = eig$vectors[, 1:q]
     rm(eig)
     V = t(chol(vcov(nonspat)))
+    cat("\nWarning: MCMC may be time consuming.\n\n")
+	flush.console()
+	Sys.sleep(0.5)
 	fit = if (family$family == "binomial")
 	          sparse.sglmm.fit.binomial(Y, X, A, M, family, nonspat$coef, V, offset, tol, minit, maxit, tune$sigma.s)
 	      else if (family$family == "gaussian")
@@ -828,5 +762,4 @@ summary.sparse.sglmm = function(object, alpha = 0.05, digits = 4, ...)
 	print(signif(coef.table, digits))
 	cat("\nDIC:", signif(object$dic, digits), "\n\nNumber of iterations:", object$iter, "\n\n")
 }
-
 
