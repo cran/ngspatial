@@ -35,11 +35,14 @@ mat randWalk(const mat& X, const mat& A, const colvec& Z,
     mu = mu / (1 + mu);
     double Zsum = as_scalar(Z.t() * A * Z);
     int fiveper = 0.05 * maxit;
+	RNGScope scope;
+	Function rnorm("rnorm"),
+	         runif("runif");
     do
     {
         do
         {
-            normvec.randn();
+            normvec = as<colvec>(rnorm(p + 1));
             thetanew = thetaold + R * normvec;
         }
         while (thetanew[p] < etaRange[0] || thetanew[p] > etaRange[1]);
@@ -60,7 +63,7 @@ mat randWalk(const mat& X, const mat& A, const colvec& Z,
                     + trans(Ynew - Y) * Xbeta + trans(Z - Ynew) * Xbetanew + trans(Y - Z) * Xbetaold
                     + etaold * trans(Z - Y) * A * muold + etanew * trans(Ynew - Z) * A * munew + eta * trans(Y - Ynew) * A * mu)
                     + accu((square(betaold) - square(betanew)) / (2 * sigma));
-        if (as_scalar(log(randu(1))) < logAccept)
+        if (as_scalar(log(as<double>(runif(1)))) < logAccept)
         {
             estimates.row(iterations + 1) = thetanew.t();
             thetaold = thetanew;
@@ -104,11 +107,14 @@ mat randWalkTrain(const mat& X, const mat& A, const colvec& Z,
     colvec mu = exp(Xbeta);
     mu = mu / (1 + mu);
     double Zsum = as_scalar(Z.t() * A * Z);
+	RNGScope scope;
+	Function rnorm("rnorm"),
+	         runif("runif");
     for (int i = 1; i < trainit + 1; i++)
     {
         do
         {
-            normvec.randn();
+            normvec = as<colvec>(rnorm(p + 1));
             thetanew = thetaold + R * normvec;
         }
         while(thetanew[p] < etaRange[0] || thetanew[p] > etaRange[1]);
@@ -129,7 +135,7 @@ mat randWalkTrain(const mat& X, const mat& A, const colvec& Z,
                             + trans(Ynew - Y) * Xbeta + trans(Z - Ynew) * Xbetanew + trans(Y - Z) * Xbetaold
                             + etaold * trans(Z - Y) * A * muold + etanew * trans(Ynew - Z) * A * munew + eta * trans(Y - Ynew) * A * mu)
                             + accu((square(betaold) - square(betanew)) / (2 * sigma));
-        if (as_scalar(log(randu(1))) < logAccept)
+        if (as_scalar(log(as<double>(runif(1)))) < logAccept)
         {
             estimates.row(i) = thetanew.t();
             thetaold = thetanew;

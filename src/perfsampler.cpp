@@ -64,6 +64,8 @@ vec rautologistic(const mat& X, const mat& A, const vec& theta)
     double sumL_i,
            sumU_i,
            q;
+    RNGScope scope;		   
+	Function runif("runif");
     while (true)
     {
         if (t == T && as_scalar(sum(U - L)) == 0)
@@ -79,7 +81,7 @@ vec rautologistic(const mat& X, const mat& A, const vec& theta)
             restart = true;
         }
         if (! restart || (restart && t <= T / 2))
-            R.row(t - 1) = randu<rowvec>(n);
+            R.row(t - 1) = as<rowvec>(runif(n)); //randu<rowvec>(n);
         for (int i = 0; i < n; i++)
         {
             sumL_i = as_scalar(A.row(i) * L);

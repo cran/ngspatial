@@ -546,13 +546,14 @@ sparse.sglmm.fit.poisson = function(Y, X, A, M, family, beta.start, V, offset, t
 
 #' Fit a sparse SGLMM.
 #'
-#' @details This function fits the sparse areal SGLMM of Hughes and Haran (2013). The first stage of the model is \deqn{g(\mu_i)=x_i^\prime\beta+m_i^\prime\gamma\hspace{1 cm}(i=1,\dots,n)}{g(\mu_i)=x_i'\beta+m_i'\gamma   (i=1,\dots,n)} or, in vectorized form, \deqn{g(\mu)=X\beta+M\gamma,} where \eqn{X} is the design matrix, \eqn{\beta} is a \eqn{p}-vector of regression coefficients, the columns of \eqn{M} are the first \eqn{q} eigenvectors of the Moran operator, and \eqn{\gamma} are spatial random effects.\cr\cr The second stage, i.e., the prior for \eqn{\gamma}, is \deqn{p(\gamma\mid\tau_s)\propto\tau_s^{q/2}\exp\left(-\frac{\tau_s}{2}\gamma^\prime M^\prime QM\gamma\right),}{p(\gamma | \tau_s) proportional to \tau_s^(q/2)exp(-\tau_s/2 \gamma'M'QM\gamma'),} where \eqn{\tau_s} is a smoothing parameter and \eqn{Q} is the graph Laplacian.\cr\cr The prior for \eqn{\beta} is spherical \eqn{p}-variate normal with mean zero and common standard deviation \code{sigma.b}, which defaults to 1,000. The prior for \eqn{\tau_s} is gamma with parameters 0.5 and 2,000.\cr\cr When the response is normally distributed, the identity link is assumed, in which case the first stage is \deqn{\mu=X\beta+M\gamma+M\delta,} where \eqn{\delta} are heterogeneity random effects. When the response is Poisson distributed, heterogeneity random effects are optional. In any case, the prior on \eqn{\delta} is spherical \eqn{q}-variate normal with mean zero and common variance \eqn{1/\tau_h}. The prior for \eqn{\tau_h} is gamma with parameters \eqn{a_h} and \eqn{b_h}, the values of which are controlled by the user through argument \code{hyper}.\cr\cr If the response is Bernoulli or Poisson, \eqn{\beta} and \eqn{\gamma} are updated using Metropolis-Hastings random walks with normal proposals. The proposal covariance matrix for \eqn{\beta} is the estimated asymptotic covariance matrix from a \code{\link{glm}} fit to the data (see \code{\link{vcov}}). The proposal for \eqn{\gamma} is spherical normal with common standard deviation \code{sigma.s}.\cr\cr The updates for \eqn{\tau_s} and \eqn{\tau_h} are Gibbs updates irrespective of the response distribution.\cr\cr If the response is Poisson distributed and heterogeneity random effects are included, those random effects are updated using a Metropolis-Hastings random walk with a spherical normal proposal. The common standard deviation is \code{sigma.h}.\cr\cr If the response is normally distributed, all updates are Gibbs updates.
+#' @details This function fits the sparse areal SGLMM of Hughes and Haran (2013). The first stage of the model is \deqn{g(\mu_i)=x_i^\prime\beta+m_i^\prime\gamma\hspace{1 cm}(i=1,\dots,n)}{g(\mu_i)=x_i'\beta+m_i'\gamma   (i=1,\dots,n)} or, in vectorized form, \deqn{g(\mu)=X\beta+M\gamma,} where \eqn{X} is the design matrix, \eqn{\beta} is a \eqn{p}-vector of regression coefficients, the columns of \eqn{M} are \eqn{q} eigenvectors of the Moran operator, and \eqn{\gamma} are spatial random effects. Arguments \code{attractive} and \code{repulsive} can be used to control the number of eigenvectors used. The default values are 50 and 0, respectively, which corresponds to pure spatial smoothing. Inclusion of some repulsive eigenvectors can be advantageous in certain applications.\cr\cr The second stage, i.e., the prior for \eqn{\gamma}, is \deqn{p(\gamma\mid\tau_s)\propto\tau_s^{q/2}\exp\left(-\frac{\tau_s}{2}\gamma^\prime M^\prime QM\gamma\right),}{p(\gamma | \tau_s) proportional to \tau_s^(q/2)exp(-\tau_s/2 \gamma'M'QM\gamma'),} where \eqn{\tau_s} is a smoothing parameter and \eqn{Q} is the graph Laplacian.\cr\cr The prior for \eqn{\beta} is spherical \eqn{p}-variate normal with mean zero and common standard deviation \code{sigma.b}, which defaults to 1,000. The prior for \eqn{\tau_s} is gamma with parameters 0.5 and 2,000.\cr\cr When the response is normally distributed, the identity link is assumed, in which case the first stage is \deqn{\mu=X\beta+M\gamma+M\delta,} where \eqn{\delta} are heterogeneity random effects. When the response is Poisson distributed, heterogeneity random effects are optional. In any case, the prior on \eqn{\delta} is spherical \eqn{q}-variate normal with mean zero and common variance \eqn{1/\tau_h}. The prior for \eqn{\tau_h} is gamma with parameters \eqn{a_h} and \eqn{b_h}, the values of which are controlled by the user through argument \code{hyper}.\cr\cr If the response is Bernoulli or Poisson, \eqn{\beta} and \eqn{\gamma} are updated using Metropolis-Hastings random walks with normal proposals. The proposal covariance matrix for \eqn{\beta} is the estimated asymptotic covariance matrix from a \code{\link{glm}} fit to the data (see \code{\link{vcov}}). The proposal for \eqn{\gamma} is spherical normal with common standard deviation \code{sigma.s}.\cr\cr The updates for \eqn{\tau_s} and \eqn{\tau_h} are Gibbs updates irrespective of the response distribution.\cr\cr If the response is Poisson distributed and heterogeneity random effects are included, those random effects are updated using a Metropolis-Hastings random walk with a spherical normal proposal. The common standard deviation is \code{sigma.h}.\cr\cr If the response is normally distributed, all updates are Gibbs updates.
 #' @param formula an object of class \code{\link{formula}}: a symbolic description of the model to be fitted.
 #' @param family a description of the error distribution and link function to be used in the model. This can be a character string naming a family function, a family function, or the result of a call to a family function. (See \code{\link{family}} for details of family functions.) Supported families are \code{gaussian} (default), \code{binomial}, and \code{poisson}.
 #' @param data an optional data frame, list, or environment (or object coercible by \code{\link{as.data.frame}} to a data frame) containing the variables in the model. If not found in \code{data}, the variables are taken from \code{environment(formula)}, typically the environment from which \code{sparse.sglmm} is called.
 #' @param offset this can be used to specify an \emph{a priori} known component to be included in the linear predictor during fitting. This should be \code{NULL} or a numeric vector of length equal to the number of cases. One or more \code{\link{offset}} terms can be included in the formula instead or as well, and if more than one is specified their sum is used. See \code{\link{model.offset}}.
 #' @param A the adjacency matrix for the underlying graph.
-#' @param q the number of Moran eigenvectors to use. The default is 50. See `Details' for more information.
+#' @param attractive the number of attractive Moran eigenvectors to use. The default is 50. See `Details' for more information.
+#' @param repulsive the number of repulsive Moran eigenvectors to use. The default is 0. See `Details' for more information.
 #' @param tol a tolerance. If all Monte Carlo standard errors are smaller than \code{tol}, no more samples are drawn from the posterior. The default is 0.01.
 #' @param minit the minimum sample size. This should be large enough to permit accurate estimation of Monte Carlo standard errors. The default is 10,000.
 #' @param maxit the maximum sample size. Sampling from the posterior terminates when all Monte Carlo standard errors are smaller than \code{tol} or when \code{maxit} samples have been drawn, whichever happens first. The default is 1,000,000.
@@ -605,20 +606,25 @@ sparse.sglmm.fit.poisson = function(Y, X, A, M, family, beta.start, V, offset, t
 #' Hughes, J. and Haran, M. (2013) Dimension reduction and alleviation of confounding for spatial generalized linear mixed models. \emph{Journal of the Royal Statistical Society, Series B}, \bold{75}(1), 139--159.
 #' @seealso \code{\link{residuals.sparse.sglmm}}, \code{\link{summary.sparse.sglmm}}, \code{\link{vcov.sparse.sglmm}}
 #' @export
-#'  @examples \dontrun{
+#' @examples \dontrun{
 #'
-#' # This is the continuation of the example given for function rautologistic.
+#' The following code duplicates the analysis described in (Hughes and Haran, 2013). The data are
+#' infant mortality data for 3,071 US counties. We do a spatial Poisson regression with offset.
 #'
-#' # Fit a sparse SGLMM with Bernoulli first stage. Use 100 Moran eigenvectors. Stop sampling when
-#' # the number of iterations reaches 100,000 or all MCSEs have fallen below the default tolerance
-#' # of 0.01, whichever comes first.
-#'
-#' fit = sparse.sglmm(Z ~ X - 1, family = binomial, A = A, q = 100, maxit = 100000, verbose = TRUE)
+#' data(infant)
+#' infant$low_weight = infant$low_weight / infant$births
+#' attach(infant)
+#' Z = deaths
+#' X = cbind(1, low_weight, black, hispanic, gini, affluence, stability)
+#' data(A)
+#' set.seed(123456)
+#' fit = sparse.sglmm(Z ~ X - 1 + offset(log(births)), family = poisson, A = A,
+#'                    tune = list(sigma.s = 0.02), verbose = TRUE)
 #' summary(fit)
 #' } 
 
-sparse.sglmm = function(formula, family = gaussian, data, offset, A, q = 50, tol = 0.01, minit = 10000, maxit = 1000000,
-                        tune = list(), hyper = list(), model = TRUE, x = FALSE, y = FALSE, verbose = FALSE)
+sparse.sglmm = function(formula, family = gaussian, data, offset, A, attractive = 50, repulsive = 0, tol = 0.01, minit = 10000,
+	                    maxit = 1000000, tune = list(), hyper = list(), model = TRUE, x = FALSE, y = FALSE, verbose = FALSE)
 {
     cl = match.call()
     if (is.character(family)) 
@@ -731,10 +737,19 @@ sparse.sglmm = function(formula, family = gaussian, data, offset, A, q = 50, tol
     }
     eig = eigen(P %*% A %*% P, symmetric = TRUE)
     eigenvalues = eig$values
-    maxq = match(TRUE, sapply(eig$val, is.zero)) - 1
-    if (! is.numeric(q) || length(q) > 1 || ! is.wholenumber(q) || q < 1 || q > maxq)
-        stop(gettextf("'q' is %d but should be a whole number between 1 and %d.", q, maxq), domain = NA)
-    M = eig$vectors[, 1:q]
+    maxatt = match(TRUE, sapply(eigenvalues, is.zero)) - 1
+    if (! is.numeric(attractive) || length(attractive) > 1 || ! is.wholenumber(attractive) || attractive < 1 || attractive > maxatt)
+        stop(gettextf("'attractive' is %d but should be a whole number between 1 and %d.", attractive, maxatt), domain = NA)
+    maxrep = match(TRUE, sapply(rev(eigenvalues), is.zero)) - 1
+    if (! is.numeric(repulsive) || length(repulsive) > 1 || ! is.wholenumber(repulsive) || repulsive < 0 || repulsive > maxrep)
+        stop(gettextf("'repulsive' is %d but should be a whole number between 0 and %d.", repulsive, maxrep), domain = NA)
+    M = eig$vectors[, 1:attractive]
+	if (repulsive > 0)
+	{
+		pos2 = length(eigenvalues)
+		pos1 = pos2 - repulsive + 1
+		M = cbind(M, eig$vectors[, pos1:pos2])
+	}
     rm(eig)
     V = t(chol(vcov(nonspat)))
     if (verbose)

@@ -36,24 +36,25 @@
 #' # to northeast.
 #'
 #' dev.new()
-#' levelplot(mu ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
+#' lattice::levelplot(mu ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
 #'
 #' # Simulate a dataset with the above mentioned regression component and eta equal to 0.6. This
 #' # value of eta corresponds to dependence that is moderate in strength.
 #'
 #' theta = c(beta, eta = 0.6)
+#' set.seed(123456)
 #' Z = rautologistic(X, A, theta)
 #'
 #' # Create a level plot of the simulated data.
 #'
 #' dev.new()
-#' levelplot(Z ~ x * y, aspect = "iso", col.regions = c("white", "black"), colorkey = FALSE)
+#' lattice::levelplot(Z ~ x * y, aspect = "iso", col.regions = c("white", "black"), colorkey = FALSE)
 #' } 
 
 rautologistic = function(X, A, theta)
 {
-    if (missing(X) || ! is.matrix(A))
-        stop("Your must supply a design matrix.")
+    if (missing(X) || ! is.matrix(X))
+        stop("You must supply a design matrix.")
     if (missing(A) || ! is.matrix(A) || ! isSymmetric(A) || ! (A == 0 || A == 1))
         stop("You must supply a symmetric binary adjacency matrix.")
     diag(A) = 0
@@ -129,7 +130,7 @@ autologistic.control = function(method, control, verbose, p)
         }
         if (control$parallel)
         {
-            if (require(parallel))
+            if (requireNamespace("parallel", quietly = TRUE))
             {
                 if (is.null(control$type) || length(control$type) > 1 || ! control$type %in% c("SOCK", "PVM", "MPI", "NWS"))
                 {
@@ -321,16 +322,19 @@ autologistic.sandwich = function(X, A, theta, type, bootit, parallel, nodes)
     }
     else
     {
-        cl = makeCluster(nodes, type)
-        clusterSetRNGStream(cl, NULL)
-        clusterEvalQ(cl, library(ngspatial))
-        gathered = clusterApplyLB(cl, 1:bootit, autologistic.sandwich.helper, X, A, theta)
-        stopCluster(cl)
-        for (j in 1:bootit)
-        {
-            gr = gathered[[j]]
-            meat = meat + gr %o% gr / bootit                
-        }
+		if (requireNamespace("parallel", quietly = TRUE))
+		{
+            cl = parallel::makeCluster(nodes, type)
+            parallel::clusterSetRNGStream(cl, NULL)
+            parallel::clusterEvalQ(cl, library(ngspatial))
+            gathered = parallel::clusterApplyLB(cl, 1:bootit, autologistic.sandwich.helper, X, A, theta)
+            parallel::stopCluster(cl)
+            for (j in 1:bootit)
+            {
+                gr = gathered[[j]]
+                meat = meat + gr %o% gr / bootit                
+            }
+		}
     }
     meat
 }
@@ -353,21 +357,23 @@ autologistic.bootstrap = function(X, A, theta, type, bootit, parallel, nodes)
     }
     else
     {
-        cl = makeCluster(nodes, type)
-        clusterSetRNGStream(cl, NULL)
-        #clusterSetupRNG(cl, seed = 1000000 * runif(6))
-        clusterEvalQ(cl, library(ngspatial))
-        gathered = clusterApplyLB(cl, 1:bootit, autologistic.bootstrap.helper, X, A, theta)
-        stopCluster(cl)
-        for (j in 1:bootit)
-        {
-            fit = gathered[[j]]
-            temp = rep(NA, length(theta))
-            if (is.null(fit$convergence) || fit$convergence != 0)
-                warning(fit$message)
-            else
-                temp = fit$coef
-            boot.sample[j, ] = temp         
+		if (requireNamespace("parallel", quietly = TRUE))
+		{
+            cl = parallel::makeCluster(nodes, type)
+            parallel::clusterSetRNGStream(cl, NULL)
+            parallel::clusterEvalQ(cl, library(ngspatial))
+            gathered = parallel::clusterApplyLB(cl, 1:bootit, autologistic.bootstrap.helper, X, A, theta)
+            parallel::stopCluster(cl)
+            for (j in 1:bootit)
+            {
+                fit = gathered[[j]]
+                temp = rep(NA, length(theta))
+                if (is.null(fit$convergence) || fit$convergence != 0)
+                    warning(fit$message)
+                else
+                    temp = fit$coef
+                boot.sample[j, ] = temp
+			}         
         }
     }
     boot.sample
@@ -570,7 +576,28 @@ summary.autologistic = function(object, alpha = 0.05, digits = 4, ...)
 #' @export
 #'  @examples \dontrun{
 #'
-#' # This is the continuation of the example given for function rautologistic.
+#' # Use the 20 x 20 square lattice as the underlying graph.
+#'
+#' n = 20
+#' A = adjacency.matrix(n)
+#'
+#' # Assign coordinates to each vertex such that the coordinates are restricted to the unit square
+#' # centered at the origin.
+#'
+#' x = rep(0:(n - 1) / (n - 1), times = n) - 0.5
+#' y = rep(0:(n - 1) / (n - 1), each = n) - 0.5
+#' X = cbind(x, y)                                 # Use the vertex locations as spatial covariates.
+#' beta = c(2, 2)                                  # These are the regression coefficients.
+#' col1 = "white"
+#' col2 = "black"
+#' colfunc = colorRampPalette(c(col1, col2))
+#'
+#' # Simulate a dataset with the above mentioned regression component and eta equal to 0.6. This
+#' # value of eta corresponds to dependence that is moderate in strength.
+#'
+#' theta = c(beta, eta = 0.6)
+#' set.seed(123456)
+#' Z = rautologistic(X, A, theta)
 #'
 #' # Find the MPLE, and do not compute confidence intervals.
 #'
@@ -581,6 +608,7 @@ summary.autologistic = function(object, alpha = 0.05, digits = 4, ...)
 #' # sandwich matrix using a parallel parametric bootstrap, where the computation is distributed
 #' # across six cores on the host workstation.
 #'
+#' set.seed(123456)
 #' fit = autologistic(Z ~ X - 1, A = A, verbose = TRUE,
 #'                    control = list(confint = "sandwich", nodes = 6))
 #' summary(fit)
@@ -588,6 +616,7 @@ summary.autologistic = function(object, alpha = 0.05, digits = 4, ...)
 #' # Compute confidence intervals based on a parallel parametric bootstrap. Use a bootstrap sample
 #' # of size 500, and distribute the computation across six cores on the host workstation.
 #'
+#' set.seed(123456)
 #' fit = autologistic(Z ~ X - 1, A = A, verbose = TRUE,
 #'                    control = list(confint = "bootstrap", bootit = 500, nodes = 6))
 #' summary(fit)
@@ -595,15 +624,18 @@ summary.autologistic = function(object, alpha = 0.05, digits = 4, ...)
 #' # Make some level plots of the residuals.
 #'
 #' dev.new()
-#' levelplot(residuals(fit) ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
+#' lattice::levelplot(residuals(fit) ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
 #' dev.new()
-#' levelplot(residuals(fit, type = "pearson") ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
+#' lattice::levelplot(residuals(fit, type = "pearson") ~ x * y, aspect = "iso",
+#'                    col.regions = colfunc(n^2))
 #' dev.new()
-#' levelplot(residuals(fit, type = "response") ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
+#' lattice::levelplot(residuals(fit, type = "response") ~ x * y, aspect = "iso",
+#'                    col.regions = colfunc(n^2))
 #'
 #' # Do MCMC for Bayesian inference. The length of the training run will be 10,000, and
 #' # the length of the subsequent inferential run will be at least 10,000.
 #'
+#' set.seed(123456)
 #' fit = autologistic(Z ~ X - 1, A = A, verbose = TRUE, method = "Bayes",
 #'                    control = list(trainit = 10000, minit = 10000, sigma = 1000))
 #' summary(fit)
