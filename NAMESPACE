@@ -1,0 +1,7 @@
+export(sparse.sglmm)
+import(batchmeans)
+import(utils)
+importFrom(lawstat,symmetry.test)
+S3method(residuals,sparse.sglmm)
+S3method(summary,sparse.sglmm)
+S3method(vcov,sparse.sglmm)

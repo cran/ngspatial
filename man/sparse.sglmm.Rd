@@ -1,0 +1,193 @@
+\name{sparse.sglmm}
+\alias{sparse.sglmm}
+\title{Fit a sparse SGLMM.}
+\usage{
+  sparse.sglmm(formula, family = gaussian, data, offset, A,
+    q = 50, tol = 0.01, minit = 10000, maxit = 1e+06,
+    tune = list(), hyper = list(), model = TRUE, x = FALSE,
+    y = FALSE)
+}
+\arguments{
+  \item{formula}{an object of class \code{\link{formula}}:
+  a symbolic description of the model to be fitted.}
+
+  \item{family}{a description of the error distribution and
+  link function to be used in the model. This can be a
+  character string naming a family function, a family
+  function, or the result of a call to a family function.
+  (See \code{\link{family}} for details of family
+  functions.) Supported families are \code{gaussian}
+  (default), \code{binomial}, and \code{poisson}.}
+
+  \item{data}{an optional data frame, list, or environment
+  (or object coercible by \code{\link{as.data.frame}} to a
+  data frame) containing the variables in the model. If not
+  found in \code{data}, the variables are taken from
+  \code{environment(formula)}, typically the environment
+  from which \code{sparse.sglmm} is called.}
+
+  \item{offset}{this can be used to specify an \emph{a
+  priori} known component to be included in the linear
+  predictor during fitting. This should be \code{NULL} or a
+  numeric vector of length equal to the number of cases.
+  One or more \code{\link{offset}} terms can be included in
+  the formula instead or as well, and if more than one is
+  specified their sum is used. See
+  \code{\link{model.offset}}.}
+
+  \item{A}{the adjacency matrix for the underlying graph,
+  which is assumed to be undirected and free of loops and
+  parallel edges.}
+
+  \item{q}{the number of Moran eigenvectors to use. The
+  default is 50. See `Details' for more information.}
+
+  \item{tol}{a tolerance. If all Monte Carlo standard
+  errors are smaller than \code{tol}, no more samples are
+  drawn from the posterior. The default is 0.01.}
+
+  \item{minit}{the minimum sample size. This should be
+  large enough to permit accurate estimation of Monte Carlo
+  standard errors. The default is 10,000.}
+
+  \item{maxit}{the maximum sample size. Sampling from the
+  posterior terminates when all Monte Carlo standard errors
+  are smaller than \code{tol} or when \code{maxit} samples
+  have been drawn, whichever happens first. The default is
+  1,000,000.}
+
+  \item{tune}{(where relevant) a list containing
+  \code{sigma.s} and \code{sigma.h}. These are the standard
+  deviations for the \eqn{\gamma} and \eqn{\delta}
+  proposals, respectively.}
+
+  \item{hyper}{(where relevant) a list containing
+  \code{a.h} and \code{b.h}, the parameters of the gamma
+  prior for \eqn{\tau_h}.}
+
+  \item{model}{a logical value indicating whether the model
+  frame should be included as a component of the returned
+  value.}
+
+  \item{x}{a logical value indicating whether the model
+  matrix used in the fitting process should be returned as
+  a component of the returned value.}
+
+  \item{y}{a logical value indicating whether the response
+  vector used in the fitting process should be returned as
+  a component of the returned value.}
+}
+\value{
+  \code{sparse.sglmm} returns an object of class
+  \dQuote{\code{sparse.sglmm}}, which is a list containing
+  the following components.  \item{coefficients}{the
+  estimated regression coefficients.}
+  \item{fitted.values}{the fitted mean values, obtained by
+  transforming the linear predictors by the inverse of the
+  link function.} \item{linear.predictors}{the linear fit
+  on link scale.} \item{residuals}{the response residuals.}
+  \item{iter}{the size of the posterior sample.}
+  \item{beta.sample}{an \code{iter} x \eqn{p} matrix
+  containing the posterior samples for \eqn{\beta}.}
+  \item{gamma.sample}{an \code{iter} x \eqn{q} matrix
+  containing the posterior samples for \eqn{\gamma}.}
+  \item{delta.sample}{(where relevant) an \code{iter} x
+  \eqn{q} matrix containing the posterior samples for
+  \eqn{\delta}.} \item{tau.s.sample}{a vector containing
+  the posterior samples for \eqn{\tau_s}.}
+  \item{tau.h.sample}{(where relevant) a vector containing
+  the posterior samples for \eqn{\tau_h}.}
+  \item{gamma.est}{the estimate of \eqn{\gamma}.}
+  \item{delta.est}{(where relevant) the estimate of
+  \eqn{\delta}.} \item{tau.s.est}{the estimate of
+  \eqn{\tau_s}.} \item{tau.h.est}{(where relevant) the
+  estimate of \eqn{\tau_h}.} \item{beta.mcse}{the Monte
+  Carlo standard errors for \eqn{\beta}.}
+  \item{gamma.mcse}{the Monte Carlo standard errors for
+  \eqn{\gamma}.} \item{delta.mcse}{(where relevant) the
+  Monte Carlo standard errors for \eqn{\delta}.}
+  \item{tau.s.mcse}{the Monte Carlo standard error for
+  \eqn{\tau_s}.} \item{tau.h.mcse}{(where relevant) the
+  Monte Carlo standard error for \eqn{\tau_h}.}
+  \item{D.bar}{\eqn{\bar{D}}, the goodness of fit component
+  of the DIC.} \item{pD}{the penalty component of the DIC.}
+  \item{dic}{the deviance information criterion,
+  \eqn{\bar{D}+pD}.} \item{beta.accept}{the acceptance rate
+  for \eqn{\beta}.} \item{gamma.accept}{the acceptance rate
+  for \eqn{\gamma}.} \item{delta.accept}{(where relevant)
+  the acceptance rate for \eqn{\delta}.} \item{y}{if
+  requested (the default), the \code{y} vector used.}
+  \item{X}{if requested, the model matrix.} \item{M}{if
+  requested, the matrix of Moran eigenvectors.}
+  \item{eigen.values}{if requested, the spectrum of the
+  Moran operator.} \item{model}{if requested (the default),
+  the model frame.} \item{call}{the matched call.}
+  \item{formula}{the formula supplied.} \item{terms}{the
+  \code{\link{terms}} object used.} \item{data}{the
+  \code{data} argument.} \item{offset}{the offset vector
+  used.} \item{xlevels}{(where relevant) a record of the
+  levels of the factors used in fitting.}
+}
+\description{
+  Fit a sparse SGLMM.
+}
+\details{
+  This function fits the sparse areal SGLMM of Hughes and
+  Haran (2012). The first stage of the model is
+  \deqn{g(\mu_i)=x_i^\prime\beta+m_i^\prime\gamma\hspace{1
+  cm}(i=1,\dots,n)}{g(\mu_i)=x_i'\beta+m_i'\gamma
+  (i=1,\dots,n)} or, in vectorized form,
+  \deqn{g(\mu)=X\beta+M\gamma,} where \eqn{X} is the design
+  matrix, \eqn{\beta} is a \eqn{p}-vector of regression
+  coefficients, the columns of \eqn{M} are the first
+  \eqn{q} eigenvectors of the Moran operator, and
+  \eqn{\gamma} are spatial random effects.\cr\cr The second
+  stage, i.e., the prior for \eqn{\gamma}, is
+  \deqn{p(\gamma\mid\tau_s)\propto\tau_s^{q/2}\exp\left(-\frac{\tau_s}{2}\gamma^\prime
+  M^\prime QM\gamma\right),}{p(\gamma | \tau_s)
+  proportional to \tau_s^(q/2)\exp(-\tau_s/2
+  \gamma'M'QM\gamma'),} where \eqn{\tau_s} is a smoothing
+  parameter and \eqn{Q} is the graph Laplacian.\cr\cr The
+  prior for \eqn{\beta} is spherical \eqn{p}-variate normal
+  with mean zero and common variance 1,000,000. The prior
+  for \eqn{\tau_s} is gamma with parameters 0.5 and
+  2,000.\cr\cr When the response is normally distributed,
+  the identity link is assumed, in which case the first
+  stage is \deqn{\mu=X\beta+M\gamma+M\delta,} where
+  \eqn{\delta} are heterogeneity random effects. When the
+  response is Poisson distributed, heterogeneity random
+  effects are optional. In any case, the prior on
+  \eqn{\delta} is spherical \eqn{q}-variate normal with
+  mean zero and common variance \eqn{1/\tau_h}. The prior
+  for \eqn{\tau_h} is gamma with parameters \eqn{a_h} and
+  \eqn{b_h}, the values of which are controlled by the user
+  through argument \code{hyper}.\cr\cr If the response is
+  Bernoulli or Poisson, \eqn{\beta} and \eqn{\gamma} are
+  updated using Metropolis-Hastings random walks with
+  normal proposals. The proposal covariance matrix for
+  \eqn{\beta} is the estimated asymptotic covariance matrix
+  from a \code{\link{glm}} fit to the data (see
+  \code{\link{vcov}}). The proposal for \eqn{\gamma} is
+  spherical normal with common standard deviation
+  \code{sigma.s}.\cr\cr The updates for \eqn{\tau_s} and
+  \eqn{\tau_h} are Gibbs updates irrespective of the
+  response distribution.\cr\cr If the response is Poisson
+  distributed and heterogeneity random effects are
+  included, those random effects are updated using a
+  Metropolis-Hastings random walk with a spherical normal
+  proposal. The common standard deviation is
+  \code{sigma.h}.\cr\cr If the response is normally
+  distributed, all updates are Gibbs updates.
+}
+\references{
+  Hughes, J. and Haran, M. (2012) Dimension reduction and
+  alleviation of confounding for spatial generalized linear
+  mixed models. \emph{Journal of the Royal Statistical
+  Society, Series B}, in press.
+}
+\seealso{
+  \code{\link{residuals.sparse.sglmm}},
+  \code{\link{summary.sparse.sglmm}},
+  \code{\link{vcov.sparse.sglmm}}
+}
+

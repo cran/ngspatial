@@ -1,0 +1,11 @@
+d44ef5171b643c821586a3ccc328a3a0 *COPYING
+1af3fd574a73395337e550b0bec19b21 *DESCRIPTION
+cc5c4e3f91754cf162a12a4d87b2e6cb *NAMESPACE
+d1300e04149c6605aabf6aa300488aba *R/misc.R
+36f3a12e6526be4e23195556f42c552d *R/sparse.sglmm.R
+10e9c4ffef1dd96d3beda540a73f23dd *R/zzz.R
+e7d880416760f72c64cdb3ccd07579f6 *inst/CITATION
+5c9f7caf47b5224de674e80293d6c6a4 *man/residuals.sparse.sglmm.Rd
+0f8a2377ae914ecea79dff382632dcec *man/sparse.sglmm.Rd
+6e70da5486d7bc9cbc176cc1901af9f5 *man/summary.sparse.sglmm.Rd
+22d1a4c018a20b027e5e156a376e05fa *man/vcov.sparse.sglmm.Rd
