@@ -1,5 +1,5 @@
 Package: ngspatial
-Version: 1.0-1
+Version: 1.0-2
 Date: 2013
 Title: Classes for Spatial Data
 Type: Package
@@ -14,7 +14,7 @@ LinkingTo: Rcpp, RcppArmadillo
 URL: http://www.biostat.umn.edu/~johnh
 RcppModules: moller, perfsampler
 Collate: 'misc.R' 'sparse.sglmm.R' 'moller.R' 'autologistic.R' 'zzz.R'
-Packaged: 2013-08-15 00:21:27 UTC; jphughesjr
+Packaged: 2013-11-01 01:09:14 UTC; jphughesjr
 NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2013-08-15 07:06:15
+Date/Publication: 2013-11-01 07:23:15

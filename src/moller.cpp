@@ -3,8 +3,8 @@
 #include <RcppArmadillo.h>
 #include <iostream>
 
-using namespace Rcpp ;
-using namespace RcppArmadillo ;
+using namespace Rcpp;
+using namespace RcppArmadillo;
 using namespace std;
 using namespace arma;
  
@@ -141,9 +141,8 @@ mat randWalkTrain(const mat& X, const mat& A, const colvec& Z,
     return estimates.rows(1, trainit);
 } 
 
-
 RCPP_MODULE(moller)
 {
-    function("randWalk", &randWalk, "");
-    function("randWalkTrain", &randWalkTrain, "");
+    Rcpp::function("randWalk", &randWalk);
+    Rcpp::function("randWalkTrain", &randWalkTrain);
 }

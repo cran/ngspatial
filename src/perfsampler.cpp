@@ -101,7 +101,7 @@ vec rautologistic(const mat& X, const mat& A, const vec& theta)
 
 RCPP_MODULE(perfsampler)
 {
-    function("rautologistic", &rautologistic, "");
-    function("bmse", &bmse, "");
+    Rcpp::function("rautologistic", &rautologistic);
+    Rcpp::function("bmse", &bmse);
 }
 
