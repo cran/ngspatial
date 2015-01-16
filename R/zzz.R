@@ -4,7 +4,7 @@
 #
 # Written by John Hughes <hughesj@umn.edu>.
 #
-# Last Modified 05/31/12
+# Last Modified 01/16/15
 # Licensed under the GNU General Public License version 2 (June, 1991)
 #
 # Part of the R/ngspatial package
@@ -25,7 +25,7 @@
     temp = packageDescription("ngspatial")
     msg = paste(temp$Package, ": ", temp$Title, "\n", "Version ", temp$Version,
                 " created on ", temp$Date, ".\n", sep = "")
-    msg = paste(msg, "copyright (c) 2013-14, John Hughes, University of Minnesota\n",
+    msg = paste(msg, "copyright (c) 2013-15, John Hughes, University of Minnesota\n",
 "                       Xiaohui Cui, University of Minnesota\n",
                 sep = "")
     msg = paste(msg, 'For citation information, type citation("ngspatial").\n', sep = "")

@@ -1,6 +1,5 @@
-desc = packageDescription("ngspatial")
-year = sub(".*(2[[:digit:]]{3})-.*", "\\1", desc$Date)
-vers = paste("R package version", desc$Version)
+year = sub(".*(2[[:digit:]]{3})-.*", "\\1", meta$Date)
+vers = paste("R package version", meta$Version)
 citHeader("'ngspatial' is a package that provides tools for analyzing spatial data, especially non-Gaussian areal data.\n\nThis version of 'ngspatial' is currently licensed under the GNU Public License, v2 or later.\n\nIf you are using 'ngspatial' for research that will be published, we request that you acknowledge this with the following citation:\n\n")
 citEntry(entry = "Manual",
          title = "ngspatial: Fitting the centered autologistic and sparse spatial generalized linear mixed models for areal data",

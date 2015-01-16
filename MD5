@@ -1,14 +1,14 @@
 06b27c3f0531b658504d8e43d234bd10 *COPYING
-88d78d332a0d26d134061cd13f38e137 *DESCRIPTION
+dedc61a1343e3950e8ea5818e592d3c2 *DESCRIPTION
 f6d1ec791e81316ef20613e91ad6eda9 *NAMESPACE
 b4d309b5caacfb581e32c1e010fdf4e7 *R/autologistic.R
 05a0dd7cbb301d21609466ce50d6ecdf *R/misc.R
 1449b9653209a04cbbd02fa490da6801 *R/moller.R
 48c1bd39e2ca5751b762f9468ae484fa *R/sparse.sglmm.R
-5beffa567bde18a7f6c23cbbcc7d9124 *R/zzz.R
+85c839392f4a33604c46427954e028bd *R/zzz.R
 88d51be4695ea4fd7b2d3f0beacdcc2f *data/A.rda
 43be7bb925809bd866f7f785ae284cb3 *data/infant.txt.gz
-6e7f7286173291fe44c377121b659893 *inst/CITATION
+ce9bb3567d63ba209f1d0012bda8d6ec *inst/CITATION
 656462dc8bc0b8c0606567352ddc78ca *man/A.Rd
 658d73151d8c2f3bedc06234a02c74dd *man/adjacency.matrix.Rd
 5cf6c18a37c5999913cecd0983b6a529 *man/autologistic.Rd

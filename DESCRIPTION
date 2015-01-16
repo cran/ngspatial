@@ -1,6 +1,6 @@
 Package: ngspatial
-Version: 1.0-4
-Date: 2014
+Version: 1.0-5
+Date: 1-16-2015
 Title: Fitting the centered autologistic and sparse spatial generalized
         linear mixed models for areal data
 Type: Package
@@ -17,6 +17,6 @@ LinkingTo: Rcpp, RcppArmadillo
 URL: http://www.biostat.umn.edu/~johnh
 Repository: CRAN
 RcppModules: moller, perfsampler
-Packaged: 2014-09-09 15:46:47 UTC; jphughesjr
+Packaged: 2015-01-16 14:48:25 UTC; jphughesjr
 NeedsCompilation: yes
-Date/Publication: 2014-09-09 19:48:15
+Date/Publication: 2015-01-16 18:12:08
