@@ -3,7 +3,7 @@
 #'
 #' @details This function implements a perfect sampler for the centered autologistic model. The sampler employs coupling from the past. 
 #' @param X the design matrix.
-#' @param A the adjacency matrix for the underlying graph.
+#' @param A the adjacency matrix for the underlying graph. The matrix need not be binary, but it must be numeric and symmetric.
 #' @param theta the vector of parameter values: \eqn{\theta = (\beta^\prime, \eta)^\prime}{\theta = (\beta', \eta)'}.
 #' @return A vector that is distributed exactly according to the centered autologistic model with the given design matrix and parameter values.
 #' @references
@@ -11,7 +11,7 @@
 #' @references
 #' Propp, J. G. and Wilson, D. B. (1996) Exact sampling with coupled Markov chains and applications to statistical mechanics. \emph{Random Structures and Algorithms}, \bold{9}(1-2), 223--252.
 #' @export
-#'  @examples \dontrun{ 
+#' @examples \dontrun{ 
 #'
 #' # Use the 20 x 20 square lattice as the underlying graph.
 #'
@@ -53,10 +53,10 @@
 
 rautologistic = function(X, A, theta)
 {
-    if (missing(X) || ! is.matrix(X))
-        stop("You must supply a design matrix.")
-    if (missing(A) || ! is.matrix(A) || ! isSymmetric(A) || ! (A == 0 || A == 1))
-        stop("You must supply a symmetric binary adjacency matrix.")
+    if (missing(X) || ! is.matrix(X) || ! is.numeric(X))
+        stop("You must supply a suitable design matrix.")
+    if (missing(A) || ! is.matrix(A) || ! isSymmetric(A) || ! is.numeric(A))
+        stop("You must supply a numeric and symmetric adjacency matrix.")
     diag(A) = 0
     if (nrow(X) != nrow(A))
         stop("The supplied design matrix and adjacency matrix are not conformable.")
@@ -524,7 +524,7 @@ summary.autologistic = function(object, alpha = 0.05, digits = 4, ...)
 #'
 #' @param formula an object of class \code{\link{formula}}: a symbolic description of the model to be fitted.
 #' @param data an optional data frame, list, or environment (or object coercible by \code{\link{as.data.frame}} to a data frame) containing the variables in the model. If not found in \code{data}, the variables are taken from \code{environment(formula)}, typically the environment from which \code{autologistic} is called.
-#' @param A the adjacency matrix for the underlying graph.
+#' @param A the adjacency matrix for the underlying graph. The matrix need not be binary, but it must be numeric and symmetric.
 #' @param method the method to use for inference. \dQuote{\code{PL}} (the default) enables maximum pseudolikelihood estimation, and \dQuote{\code{Bayes}} enables Bayesian inference.
 #' @param control a list of the following control parameters.
 #'        \describe{
@@ -574,7 +574,7 @@ summary.autologistic = function(object, alpha = 0.05, digits = 4, ...)
 #' Moller, J., Pettitt, A., Berthelsen, K., and Reeves, R. (2006) An efficient Markov chain Monte Carlo method for distributions with intractable normalising constants. \emph{Biometrika}, \bold{93}(2), 451--458.
 #' @seealso \code{\link{rautologistic}}, \code{\link{residuals.autologistic}}, \code{\link{summary.autologistic}}, \code{\link{vcov.autologistic}}
 #' @export
-#'  @examples \dontrun{
+#' @examples \dontrun{
 #'
 #' # Use the 20 x 20 square lattice as the underlying graph.
 #'
@@ -647,8 +647,8 @@ autologistic = function(formula, data, A, method = c("PL", "Bayes"), model = TRU
     cl = match.call()   
     if (missing(formula))
         stop("You must supply a formula.")
-    if (missing(A) || ! is.matrix(A) || ! isSymmetric(A) || ! (A == 0 || A == 1))
-        stop("You must supply a symmetric binary adjacency matrix.")
+    if (missing(A) || ! is.matrix(A) || ! isSymmetric(A) || ! is.numeric(A))
+        stop("You must supply a numeric and symmetric adjacency matrix.")
     diag(A) = 0
     mf = match.call(expand.dots = FALSE)
     m = match(c("formula", "data"), names(mf), 0)

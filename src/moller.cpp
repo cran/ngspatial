@@ -21,7 +21,7 @@ mat randWalk(const mat& X, const mat& A, const colvec& Z,
     mat eigvec;
     eig_sym(eigval, eigvec, V);
     mat R = eigvec * diagmat(sqrt(eigval));
-    colvec Y = rautologistic(X, A, theta);
+    colvec Y = rautologisticcpp(X, A, theta);
     colvec Ynew(n);
     colvec thetaold = theta;
     colvec thetanew = theta;
@@ -46,7 +46,7 @@ mat randWalk(const mat& X, const mat& A, const colvec& Z,
             thetanew = thetaold + R * normvec;
         }
         while (thetanew[p] < etaRange[0] || thetanew[p] > etaRange[1]);
-        Ynew = rautologistic(X, A, thetanew);
+        Ynew = rautologisticcpp(X, A, thetanew);
         colvec betaold = thetaold.subvec(0, p - 1);
         colvec betanew = thetanew.subvec(0, p - 1);
         double etaold = thetaold[p];
@@ -94,7 +94,7 @@ mat randWalkTrain(const mat& X, const mat& A, const colvec& Z,
     mat eigvec;
     eig_sym(eigval, eigvec, V);
     mat R = eigvec * diagmat(sqrt(eigval));
-    colvec Y = rautologistic(X, A, theta);
+    colvec Y = rautologisticcpp(X, A, theta);
     colvec Ynew(n);
     colvec thetaold = theta;
     colvec thetanew = theta;
@@ -118,7 +118,7 @@ mat randWalkTrain(const mat& X, const mat& A, const colvec& Z,
             thetanew = thetaold + R * normvec;
         }
         while(thetanew[p] < etaRange[0] || thetanew[p] > etaRange[1]);
-        Ynew = rautologistic(X, A, thetanew);
+        Ynew = rautologisticcpp(X, A, thetanew);
         colvec betaold = thetaold.subvec(0, p - 1);
         colvec betanew = thetanew.subvec(0, p - 1);
         double etaold = thetaold[p];

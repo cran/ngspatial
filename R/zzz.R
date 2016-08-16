@@ -13,20 +13,18 @@
 #
 ######################################################################
 
-#' @import batchmeans Rcpp utils
+#' @import batchmeans Rcpp
 
-.onLoad = function(libname, pkgname)
-{
-    loadRcppModules(direct = FALSE)
-}
+loadModule("moller", TRUE)
+loadModule("perfsampler", TRUE)
+utils::globalVariables(c("moller", "perfsampler"))
 
 .onAttach = function(libname, pkgname)
 {
     temp = packageDescription("ngspatial")
     msg = paste(temp$Package, ": ", temp$Title, "\n", "Version ", temp$Version,
                 " created on ", temp$Date, ".\n", sep = "")
-    msg = paste(msg, "copyright (c) 2013-15, John Hughes, University of Minnesota\n",
-"                       Xiaohui Cui, University of Minnesota\n",
+    msg = paste(msg, "copyright (c) 2013-2016, John Hughes, University of Colorado Denver\n",
                 sep = "")
     msg = paste(msg, 'For citation information, type citation("ngspatial").\n', sep = "")
     msg = paste(msg, 'Type help(package = ngspatial) to get started.\n', sep = "")

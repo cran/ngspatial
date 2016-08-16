@@ -46,7 +46,7 @@ bool isLessTol(const mat& vals, double tol)
     return lessTol;
 }
 
-vec rautologistic(const mat& X, const mat& A, const vec& theta)
+vec rautologisticcpp(const mat& X, const mat& A, const vec& theta)
 {
     colvec beta = theta.subvec(0, theta.size() - 2);
     double eta = theta[theta.size() - 1];
@@ -103,7 +103,7 @@ vec rautologistic(const mat& X, const mat& A, const vec& theta)
 
 RCPP_MODULE(perfsampler)
 {
-    Rcpp::function("rautologistic", &rautologistic);
+    Rcpp::function("rautologisticcpp", &rautologisticcpp);
     Rcpp::function("bmse", &bmse);
 }
 
