@@ -3,7 +3,7 @@
 
 #include <RcppArmadillo.h>
 
-arma::vec rautologisticcpp(const arma::mat& X, const arma::mat& A, const arma::vec& theta);
+arma::vec rautologistic_(const arma::mat& X, const arma::mat& A, const arma::vec& theta);
 double bmse(const arma::vec& vals);
 bool isLessTol(const arma::mat& vals, double tol);
 

@@ -18,3 +18,4 @@ importFrom(stats, .getXlevels, binomial, cov, dbinom,
              model.offset, model.response, optim, qnorm,
              quantile, rgamma, rnorm, runif, vcov, weights)
 importFrom(utils, flush.console, packageDescription)
+

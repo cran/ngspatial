@@ -6,10 +6,10 @@ citEntry(entry = "Manual",
          author = personList(as.person("John Hughes"),
                              as.person("Xiaohui Cui")),
          year = year,
-         address = "Minneapolis, MN",
+         address = "Denver, CO",
          note = vers,
          textVersion =
          paste("John Hughes and Xiaohui Cui. (",
                year,
                "). ngspatial: Fitting the Centered Autologistic and Sparse Spatial Generalized Linear Mixed Models for Areal Data. ",
-               vers, ". Minneapolis, MN.", sep = ""))
+               vers, ". Denver, CO.", sep = ""))
