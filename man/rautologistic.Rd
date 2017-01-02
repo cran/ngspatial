@@ -23,7 +23,6 @@ Return a perfect sample from a centered autologistic model.
 This function implements a perfect sampler for the centered autologistic model. The sampler employs coupling from the past.
 }
 \examples{
-\dontrun{ 
 
 # Use the 20 x 20 square lattice as the underlying graph.
 
@@ -48,7 +47,7 @@ colfunc = colorRampPalette(c(col1, col2))
 # to northeast.
 
 dev.new()
-lattice::levelplot(mu ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
+levelplot(mu ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
 
 # Simulate a dataset with the above mentioned regression component and eta equal to 0.6. This
 # value of eta corresponds to dependence that is moderate in strength.
@@ -60,8 +59,7 @@ Z = rautologistic(X, A, theta)
 # Create a level plot of the simulated data.
 
 dev.new()
-lattice::levelplot(Z ~ x * y, aspect = "iso", col.regions = c("white", "black"), colorkey = FALSE)
-} 
+levelplot(Z ~ x * y, aspect = "iso", col.regions = c("white", "black"), colorkey = FALSE) 
 }
 \references{
 Moller, J. (1999) Perfect simulation of conditionally specified models. \emph{Journal of the Royal Statistical Society, Series B, Methodological}, \bold{61}, 251--264.

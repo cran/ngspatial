@@ -11,7 +11,7 @@
 #' @references
 #' Propp, J. G. and Wilson, D. B. (1996) Exact sampling with coupled Markov chains and applications to statistical mechanics. \emph{Random Structures and Algorithms}, \bold{9}(1-2), 223--252.
 #' @export
-#' @examples \dontrun{ 
+#' @examples
 #'
 #' # Use the 20 x 20 square lattice as the underlying graph.
 #'
@@ -36,7 +36,7 @@
 #' # to northeast.
 #'
 #' dev.new()
-#' lattice::levelplot(mu ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
+#' levelplot(mu ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
 #'
 #' # Simulate a dataset with the above mentioned regression component and eta equal to 0.6. This
 #' # value of eta corresponds to dependence that is moderate in strength.
@@ -48,8 +48,7 @@
 #' # Create a level plot of the simulated data.
 #'
 #' dev.new()
-#' lattice::levelplot(Z ~ x * y, aspect = "iso", col.regions = c("white", "black"), colorkey = FALSE)
-#' } 
+#' levelplot(Z ~ x * y, aspect = "iso", col.regions = c("white", "black"), colorkey = FALSE) 
 
 rautologistic = function(X, A, theta)
 {
@@ -65,7 +64,7 @@ rautologistic = function(X, A, theta)
     p = length(theta)
     if (ncol(X) != p - 1)
         stop("The given design matrix and vector of regression coefficients are not conformable.")
-    as.vector(perfsampler$rautologistic_(X, A, theta))
+    as.numeric(perfsampler$rautologistic_(X, A, theta))
 }
 
 autologistic.bmse = function(mat)
@@ -286,9 +285,9 @@ autologistic.sandwich.helper = function(dummy, X, A, theta)
 {
     Z = rautologistic(X, A, theta)
     len = length(theta)
-    mu = as.vector(exp(X %*% theta[-len]))
+    mu = as.numeric(exp(X %*% theta[-len]))
     mu = mu / (1 + mu)
-    p = as.vector(exp(X %*% theta[-len] + theta[len] * A %*% (Z - mu)))
+    p = as.numeric(exp(X %*% theta[-len] + theta[len] * A %*% (Z - mu)))
     p = p / (1 + p)
     c((Z - p) %*% (X - theta[len] * A %*% (X * mu * (1 - mu))), (Z - p) %*% A %*% (Z - mu))
 }
@@ -296,9 +295,9 @@ autologistic.sandwich.helper = function(dummy, X, A, theta)
 autologistic.grad = function(params, X, A, Z)
 {
     len = length(params)
-    mu = as.vector(exp(X %*% params[-len]))
+    mu = as.numeric(exp(X %*% params[-len]))
     mu = mu / (1 + mu)
-    p = as.vector(exp(X %*% params[-len] + params[len] * A %*% (Z - mu)))
+    p = as.numeric(exp(X %*% params[-len] + params[len] * A %*% (Z - mu)))
     p = p / (1 + p)
     -c((Z - p) %*% (X - params[len] * A %*% (X * mu * (1 - mu))), (Z - p) %*% A %*% (Z - mu))
 }
@@ -312,9 +311,9 @@ autologistic.sandwich = function(X, A, theta, type, bootit, parallel, nodes)
         {
             Z = rautologistic(X, A, theta)
             len = length(theta)
-            mu = as.vector(exp(X %*% theta[-len]))
+            mu = as.numeric(exp(X %*% theta[-len]))
             mu = mu / (1 + mu)
-            p = as.vector(exp(X %*% theta[-len] + theta[len] * A %*% (Z - mu)))
+            p = as.numeric(exp(X %*% theta[-len] + theta[len] * A %*% (Z - mu)))
             p = p / (1 + p)
             gr = c((Z - p) %*% (X - theta[len] * A %*% (X * mu * (1 - mu))), (Z - p) %*% A %*% (Z - mu))
             meat = meat + gr %o% gr / bootit
@@ -574,7 +573,7 @@ summary.autologistic = function(object, alpha = 0.05, digits = 4, ...)
 #' Moller, J., Pettitt, A., Berthelsen, K., and Reeves, R. (2006) An efficient Markov chain Monte Carlo method for distributions with intractable normalising constants. \emph{Biometrika}, \bold{93}(2), 451--458.
 #' @seealso \code{\link{rautologistic}}, \code{\link{residuals.autologistic}}, \code{\link{summary.autologistic}}, \code{\link{vcov.autologistic}}
 #' @export
-#' @examples \dontrun{
+#' @examples
 #'
 #' # Use the 20 x 20 square lattice as the underlying graph.
 #'
@@ -604,42 +603,41 @@ summary.autologistic = function(object, alpha = 0.05, digits = 4, ...)
 #' fit = autologistic(Z ~ X - 1, A = A, control = list(confint = "none"))
 #' summary(fit)
 #'
+#' # Make some level plots of the residuals.
+#'
+#' dev.new()
+#' levelplot(residuals(fit) ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
+#' dev.new()
+#' levelplot(residuals(fit, type = "pearson") ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
+#' dev.new()
+#' levelplot(residuals(fit, type = "response") ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
+#'
+#' # The following examples are not executed by default since the computation is time consuming.
+#'
 #' # Compute confidence intervals based on the normal approximation. Estimate the "filling" in the
 #' # sandwich matrix using a parallel parametric bootstrap, where the computation is distributed
 #' # across six cores on the host workstation.
 #'
-#' set.seed(123456)
-#' fit = autologistic(Z ~ X - 1, A = A, verbose = TRUE,
-#'                    control = list(confint = "sandwich", nodes = 6))
-#' summary(fit)
+#' # set.seed(123456)
+#' # fit = autologistic(Z ~ X - 1, A = A, verbose = TRUE,
+#' #                   control = list(confint = "sandwich", nodes = 6))
+#' # summary(fit)
 #'
 #' # Compute confidence intervals based on a parallel parametric bootstrap. Use a bootstrap sample
 #' # of size 500, and distribute the computation across six cores on the host workstation.
 #'
-#' set.seed(123456)
-#' fit = autologistic(Z ~ X - 1, A = A, verbose = TRUE,
-#'                    control = list(confint = "bootstrap", bootit = 500, nodes = 6))
-#' summary(fit)
-#'
-#' # Make some level plots of the residuals.
-#'
-#' dev.new()
-#' lattice::levelplot(residuals(fit) ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
-#' dev.new()
-#' lattice::levelplot(residuals(fit, type = "pearson") ~ x * y, aspect = "iso",
-#'                    col.regions = colfunc(n^2))
-#' dev.new()
-#' lattice::levelplot(residuals(fit, type = "response") ~ x * y, aspect = "iso",
-#'                    col.regions = colfunc(n^2))
+#' # set.seed(123456)
+#' # fit = autologistic(Z ~ X - 1, A = A, verbose = TRUE,
+#' #                   control = list(confint = "bootstrap", bootit = 500, nodes = 6))
+#' # summary(fit)
 #'
 #' # Do MCMC for Bayesian inference. The length of the training run will be 10,000, and
 #' # the length of the subsequent inferential run will be at least 10,000.
 #'
-#' set.seed(123456)
-#' fit = autologistic(Z ~ X - 1, A = A, verbose = TRUE, method = "Bayes",
-#'                    control = list(trainit = 10000, minit = 10000, sigma = 1000))
-#' summary(fit)
-#' } 
+#' # set.seed(123456)
+#' # fit = autologistic(Z ~ X - 1, A = A, verbose = TRUE, method = "Bayes",
+#' #                   control = list(trainit = 10000, minit = 10000, sigma = 1000))
+#' # summary(fit)
 
 autologistic = function(formula, data, A, method = c("PL", "Bayes"), model = TRUE,
                         x = FALSE, y = FALSE, verbose = FALSE, control = list())
@@ -723,7 +721,7 @@ autologistic = function(formula, data, A, method = c("PL", "Bayes"), model = TRU
         class(fit) = c("autologistic")
         p = p + 1
         beta = as.matrix(fit$sample[, -p])
-        eta = as.vector(fit$sample[, p])
+        eta = as.numeric(fit$sample[, p])
         n = length(Z)
         linear.predictors = numeric(n)
         fitted.values = numeric(n)

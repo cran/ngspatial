@@ -91,7 +91,6 @@ This function fits the centered autologistic model of Caragea and Kaiser (2009) 
          The posterior covariance matrix of \eqn{\theta} is estimated using samples obtained during a training run. The default number of iterations for the training run is 100,000, but this can be controlled by the user (via parameter \code{trainit}). The estimated covariance matrix is then used as the proposal variance for a Metropolis-Hastings random walk. The proposal distribution is normal. The posterior samples obtained during the second run are used for inference. The length of the run can be controlled by the user via parameters \code{minit}, \code{maxit}, and \code{tol}. The first determines the minimum number of iterations. If \code{minit} has been reached, the sampler will terminate when \code{maxit} is reached or all Monte Carlo standard errors are smaller than \code{tol}, whichever happens first. The default values for \code{minit}, \code{maxit}, and \code{tol} are 100,000; 1,000,000; and 0.01, respectively.
 }
 \examples{
-\dontrun{
 
 # Use the 20 x 20 square lattice as the underlying graph.
 
@@ -121,42 +120,41 @@ Z = rautologistic(X, A, theta)
 fit = autologistic(Z ~ X - 1, A = A, control = list(confint = "none"))
 summary(fit)
 
+# Make some level plots of the residuals.
+
+dev.new()
+levelplot(residuals(fit) ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
+dev.new()
+levelplot(residuals(fit, type = "pearson") ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
+dev.new()
+levelplot(residuals(fit, type = "response") ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
+
+# The following examples are not executed by default since the computation is time consuming.
+
 # Compute confidence intervals based on the normal approximation. Estimate the "filling" in the
 # sandwich matrix using a parallel parametric bootstrap, where the computation is distributed
 # across six cores on the host workstation.
 
-set.seed(123456)
-fit = autologistic(Z ~ X - 1, A = A, verbose = TRUE,
-                   control = list(confint = "sandwich", nodes = 6))
-summary(fit)
+# set.seed(123456)
+# fit = autologistic(Z ~ X - 1, A = A, verbose = TRUE,
+#                   control = list(confint = "sandwich", nodes = 6))
+# summary(fit)
 
 # Compute confidence intervals based on a parallel parametric bootstrap. Use a bootstrap sample
 # of size 500, and distribute the computation across six cores on the host workstation.
 
-set.seed(123456)
-fit = autologistic(Z ~ X - 1, A = A, verbose = TRUE,
-                   control = list(confint = "bootstrap", bootit = 500, nodes = 6))
-summary(fit)
-
-# Make some level plots of the residuals.
-
-dev.new()
-lattice::levelplot(residuals(fit) ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
-dev.new()
-lattice::levelplot(residuals(fit, type = "pearson") ~ x * y, aspect = "iso",
-                   col.regions = colfunc(n^2))
-dev.new()
-lattice::levelplot(residuals(fit, type = "response") ~ x * y, aspect = "iso",
-                   col.regions = colfunc(n^2))
+# set.seed(123456)
+# fit = autologistic(Z ~ X - 1, A = A, verbose = TRUE,
+#                   control = list(confint = "bootstrap", bootit = 500, nodes = 6))
+# summary(fit)
 
 # Do MCMC for Bayesian inference. The length of the training run will be 10,000, and
 # the length of the subsequent inferential run will be at least 10,000.
 
-set.seed(123456)
-fit = autologistic(Z ~ X - 1, A = A, verbose = TRUE, method = "Bayes",
-                   control = list(trainit = 10000, minit = 10000, sigma = 1000))
-summary(fit)
-} 
+# set.seed(123456)
+# fit = autologistic(Z ~ X - 1, A = A, verbose = TRUE, method = "Bayes",
+#                   control = list(trainit = 10000, minit = 10000, sigma = 1000))
+# summary(fit)
 }
 \references{
 Caragea, P. and Kaiser, M. (2009) Autologistic models with interpretable parameters. \emph{Journal of Agricultural, Biological, and Environmental Statistics}, \bold{14}(3), 281--300.
