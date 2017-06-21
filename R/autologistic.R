@@ -25,18 +25,6 @@
 #' y = rep(0:(n - 1) / (n - 1), each = n) - 0.5
 #' X = cbind(x, y)                                 # Use the vertex locations as spatial covariates.
 #' beta = c(2, 2)                                  # These are the regression coefficients.
-#' mu = exp(X %*% beta)
-#' mu = mu / (1 + mu)                              # Compute the independence expectations.
-#' col1 = "white"
-#' col2 = "black"
-#' colfunc = colorRampPalette(c(col1, col2))
-#'
-#' # Now produce a level plot of the independence expectations. This shows that the large-scale
-#' # structure corresponds to a probability gradient that increases as one moves from southwest
-#' # to northeast.
-#'
-#' dev.new()
-#' levelplot(mu ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
 #'
 #' # Simulate a dataset with the above mentioned regression component and eta equal to 0.6. This
 #' # value of eta corresponds to dependence that is moderate in strength.
@@ -44,11 +32,6 @@
 #' theta = c(beta, eta = 0.6)
 #' set.seed(123456)
 #' Z = rautologistic(X, A, theta)
-#'
-#' # Create a level plot of the simulated data.
-#'
-#' dev.new()
-#' levelplot(Z ~ x * y, aspect = "iso", col.regions = c("white", "black"), colorkey = FALSE) 
 
 rautologistic = function(X, A, theta)
 {
@@ -64,7 +47,7 @@ rautologistic = function(X, A, theta)
     p = length(theta)
     if (ncol(X) != p - 1)
         stop("The given design matrix and vector of regression coefficients are not conformable.")
-    as.numeric(perfsampler$rautologistic_(X, A, theta))
+    as.numeric(rautologistic_(X, A, theta))
 }
 
 autologistic.bmse = function(mat)
@@ -81,7 +64,7 @@ autologistic.bmse = function(mat)
         bmse = numeric(p)
         for (i in 1:p)
         {
-            temp = perfsampler$bmse(mat[, i])
+            temp = bmse(mat[, i])
             if (temp == -1) 
                 temp = NA
             bmse[i] = temp
@@ -131,15 +114,15 @@ autologistic.control = function(method, control, verbose, p)
         {
             if (requireNamespace("parallel", quietly = TRUE))
             {
-                if (is.null(control$type) || length(control$type) > 1 || ! control$type %in% c("SOCK", "PVM", "MPI", "NWS"))
+                if (is.null(control$type) || length(control$type) > 1 || ! control$type %in% c("SOCK", "PSOCK", "FORK", "MPI", "NWS"))
                 {
                     if (verbose)
-                        cat("\nControl parameter 'type' must be \"SOCK\", \"PVM\", \"MPI\", or \"NWS\". Setting it to \"SOCK\".\n")
+                        cat("\nControl parameter 'type' must be \"SOCK\", \"PSOCK\", \"FORK\", \"MPI\", or \"NWS\". Setting it to \"SOCK\".\n")
                     control$type = "SOCK"
                 }
                 nodes = control$nodes
                 if (is.null(control$nodes) || ! is.numeric(nodes) || length(nodes) > 1 || ! is.wholenumber(nodes) || nodes < 2)
-                    stop("Control parameter 'nodes' must be a whole number greater than 2.")
+                    stop("Control parameter 'nodes' must be a whole number greater than 1.")
             }
             else
             {
@@ -278,7 +261,12 @@ autologistic.bootstrap.helper = function(dummy, X, A, theta)
 {
     Z = rautologistic(X, A, theta)
     fit = autologistic.fit(X, A, Z, FALSE)
-    fit
+    temp = rep(NA, length(theta))
+    if (is.null(fit$convergence) || fit$convergence != 0)
+        warning(fit$message)
+    else
+        temp = fit$coef
+    temp
 }
 
 autologistic.sandwich.helper = function(dummy, X, A, theta)
@@ -302,79 +290,82 @@ autologistic.grad = function(params, X, A, Z)
     -c((Z - p) %*% (X - params[len] * A %*% (X * mu * (1 - mu))), (Z - p) %*% A %*% (Z - mu))
 }
 
-autologistic.sandwich = function(X, A, theta, type, bootit, parallel, nodes)
+autologistic.sandwich = function(X, A, theta, type, bootit, parallel, nodes, verbose)
 {
     meat = 0
     if (! parallel)
     {
-        for (j in 1:bootit)
-        {
-            Z = rautologistic(X, A, theta)
-            len = length(theta)
-            mu = as.numeric(exp(X %*% theta[-len]))
-            mu = mu / (1 + mu)
-            p = as.numeric(exp(X %*% theta[-len] + theta[len] * A %*% (Z - mu)))
-            p = p / (1 + p)
-            gr = c((Z - p) %*% (X - theta[len] * A %*% (X * mu * (1 - mu))), (Z - p) %*% A %*% (Z - mu))
-            meat = meat + gr %o% gr / bootit
+		if (verbose && requireNamespace("pbapply", quietly = TRUE))
+		{
+			cat("\n")
+			flush.console()
+			gathered = pbapply::pblapply(1:bootit, autologistic.sandwich.helper, X, A, theta)
+		}
+		else
+		{
+			gathered = vector("list", bootit)
+            for (j in 1:bootit)
+                gathered[[j]] = autologistic.sandwich.helper(NULL, X, A, theta)
         }
     }
     else
     {
-		if (requireNamespace("parallel", quietly = TRUE))
+        cl = parallel::makeCluster(nodes, type)
+        parallel::clusterEvalQ(cl, library(ngspatial))
+		parallel::clusterSetRNGStream(cl, .Random.seed[-1])
+        if (verbose && requireNamespace("pbapply", quietly = TRUE))
 		{
-            cl = parallel::makeCluster(nodes, type)
-            parallel::clusterSetRNGStream(cl, NULL)
-            parallel::clusterEvalQ(cl, library(ngspatial))
-            gathered = parallel::clusterApplyLB(cl, 1:bootit, autologistic.sandwich.helper, X, A, theta)
-            parallel::stopCluster(cl)
-            for (j in 1:bootit)
-            {
-                gr = gathered[[j]]
-                meat = meat + gr %o% gr / bootit                
-            }
+		    cat("\n")
+			flush.console()
+			gathered = pbapply::pblapply(1:bootit, autologistic.sandwich.helper, X, A, theta, cl = cl)
 		}
+		else
+            gathered = parallel::clusterApplyLB(cl, 1:bootit, autologistic.sandwich.helper, X, A, theta)
+        parallel::stopCluster(cl)
+    }
+    for (j in 1:bootit)
+    {
+        gr = gathered[[j]]
+        meat = meat + gr %o% gr / bootit                
     }
     meat
 }
 
-autologistic.bootstrap = function(X, A, theta, type, bootit, parallel, nodes)
+autologistic.bootstrap = function(X, A, theta, type, bootit, parallel, nodes, verbose)
 {
     boot.sample = data.frame(matrix(, bootit, length(theta)))
     if (! parallel)
     {
-        for (j in 1:bootit)
-        {
-            fit = autologistic.bootstrap.helper(NULL, X, A, theta)
-            temp = rep(NA, length(theta))
-            if (is.null(fit$convergence) || fit$convergence != 0)
-                warning(fit$message)
-            else
-                temp = fit$coef
-            boot.sample[j, ] = temp
+		if (verbose && requireNamespace("pbapply", quietly = TRUE))
+		{
+			cat("\n")
+			flush.console()
+			gathered = pbapply::pblapply(1:bootit, autologistic.bootstrap.helper, X, A, theta)
+		}
+		else
+		{
+			gathered = vector("list", bootit)
+            for (j in 1:bootit)
+                gathered[[j]] = autologistic.bootstrap.helper(NULL, X, A, theta)
         }
     }
     else
     {
-		if (requireNamespace("parallel", quietly = TRUE))
+        cl = parallel::makeCluster(nodes, type)
+        parallel::clusterEvalQ(cl, library(ngspatial))
+		parallel::clusterSetRNGStream(cl, .Random.seed[-1])
+        if (verbose && requireNamespace("pbapply", quietly = TRUE))
 		{
-            cl = parallel::makeCluster(nodes, type)
-            parallel::clusterSetRNGStream(cl, NULL)
-            parallel::clusterEvalQ(cl, library(ngspatial))
+		    cat("\n")
+			flush.console()
+			gathered = pbapply::pblapply(1:bootit, autologistic.bootstrap.helper, X, A, theta, cl = cl)
+		}
+		else
             gathered = parallel::clusterApplyLB(cl, 1:bootit, autologistic.bootstrap.helper, X, A, theta)
-            parallel::stopCluster(cl)
-            for (j in 1:bootit)
-            {
-                fit = gathered[[j]]
-                temp = rep(NA, length(theta))
-                if (is.null(fit$convergence) || fit$convergence != 0)
-                    warning(fit$message)
-                else
-                    temp = fit$coef
-                boot.sample[j, ] = temp
-			}         
-        }
+        parallel::stopCluster(cl)
     }
+	for (j in 1:bootit)
+		boot.sample[j, ] = gathered[[j]]
     boot.sample
 }
 
@@ -508,7 +499,7 @@ summary.autologistic = function(object, alpha = 0.05, digits = 4, ...)
 #'          \cr
 #'          Maximum pseudolikelihood estimation sidesteps the intractability of \eqn{c(\theta)} by maximizing the product of the conditional likelihoods.
 #'          Confidence intervals are then obtained using a parametric bootstrap or a normal approximation, i.e., sandwich estimation. The bootstrap datasets are generated by perfect sampling (\code{\link{rautologistic}}).
-#'          The bootstrap samples can be generated in parallel using the \pkg{snow} package.
+#'          The bootstrap samples can be generated in parallel using the \pkg{parallel} package.
 #'          \cr
 #'          \cr
 #'          Bayesian inference is obtained using the auxiliary variable algorithm of Moller et al. (2006).
@@ -535,8 +526,8 @@ summary.autologistic = function(object, alpha = 0.05, digits = 4, ...)
 #'        \item{\code{minit}}{ (Bayes) the minimum number of posterior samples. Defaults to 100,000.}
 #'        \item{\code{maxit}}{ (Bayes) the maximum number of posterior samples. Defaults to 1,000,000.}
 #'        \item{\code{tol}}{ (Bayes) the tolerance. Defaults to 0.01.}
-#'        \item{\code{parallel}}{ (PL) a logical value indicating whether to parallelize the bootstrap. This defaults to \code{TRUE} if the \pkg{snow} package is installed.}
-#'        \item{\code{type}}{ (PL) the cluster type, one of \dQuote{\code{SOCK}} (default), \dQuote{\code{PVM}}, \dQuote{\code{MPI}}, or \dQuote{\code{NWS}}.}
+#'        \item{\code{parallel}}{ (PL) a logical value indicating whether to parallelize the bootstrap. This defaults to \code{TRUE} if the \pkg{parallel} package is available.}
+#'        \item{\code{type}}{ (PL) the cluster type, one of \dQuote{\code{FORK}}, \dQuote{\code{MPI}}, \dQuote{\code{NWS}}, \dQuote{\code{PSOCK}}, or \dQuote{\code{SOCK}} (default).}
 #'        \item{\code{nodes}}{ (PL) the number of slave nodes to create.}}
 #' @param model a logical value indicating whether the model frame should be included as a component of the returned value.
 #' @param x a logical value indicating whether the model matrix used in the fitting process should be returned as a component of the returned value.
@@ -602,15 +593,6 @@ summary.autologistic = function(object, alpha = 0.05, digits = 4, ...)
 #'
 #' fit = autologistic(Z ~ X - 1, A = A, control = list(confint = "none"))
 #' summary(fit)
-#'
-#' # Make some level plots of the residuals.
-#'
-#' dev.new()
-#' levelplot(residuals(fit) ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
-#' dev.new()
-#' levelplot(residuals(fit, type = "pearson") ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
-#' dev.new()
-#' levelplot(residuals(fit, type = "response") ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
 #'
 #' # The following examples are not executed by default since the computation is time consuming.
 #'
@@ -681,12 +663,8 @@ autologistic = function(formula, data, A, method = c("PL", "Bayes"), model = TRU
         if (control$confint == "sandwich")
         {
             if (verbose)
-            {
-                cat("\nWarning: Bootstrapping may be time consuming.\n\n")
-                flush.console()
-                Sys.sleep(0.5)
-            }
-            meat = autologistic.sandwich(X, A, fit$coef, control$type, control$bootit, control$parallel, control$nodes)
+                cat("\nWarning: Bootstrapping may be time consuming.\n")
+            meat = autologistic.sandwich(X, A, fit$coef, control$type, control$bootit, control$parallel, control$nodes, verbose)
             bread = try(solve(fit$I.hat), silent = TRUE)
             if (class(bread) != "try-error")
                 fit$S = bread %*% meat %*% bread
@@ -698,23 +676,15 @@ autologistic = function(formula, data, A, method = c("PL", "Bayes"), model = TRU
         else if (control$confint == "bootstrap")
         {
             if (verbose)
-            {
-                cat("\nWarning: Bootstrapping may be time consuming.\n\n")
-                flush.console()
-                Sys.sleep(0.5)
-            }
-            fit$sample = autologistic.bootstrap(X, A, fit$coef, control$type, control$bootit, control$parallel, control$nodes)
+                cat("\nWarning: Bootstrapping may be time consuming.\n")
+            fit$sample = autologistic.bootstrap(X, A, fit$coef, control$type, control$bootit, control$parallel, control$nodes, verbose)
             fit$mcse = autologistic.bmse(fit$sample)
         }
     }
     else # method == "Bayes"
     {
         if (verbose)
-        {
-            cat("\nWarning: MCMC may be time consuming.\n\n")
-            flush.console()
-            Sys.sleep(0.5)
-        }
+            cat("\nWarning: MCMC may be time consuming.\n")
         s2 = rep(control$sigma^2, p)
         temp = Moller.run(X, A, Z, fit$coef, control$trainit, control$tol, control$minit, control$maxit, s2, control$eta.max, verbose)
         fit = c(fit[-which(names(fit) == "coefficients")], temp)

@@ -19,14 +19,20 @@ sparse.sglmm.fit.binomial = function(Y, X, A, M, family, beta.start, V, offset, 
         offset = rep(0, n)
     start = 1
     k = 1
-    five.pct = round(0.05 * maxit, 0)
+	if (verbose)
+	{
+	    pb = pbapply::startpb(0, maxit)
+	    on.exit(pbapply::closepb(pb))
+	    cat("\n")
+	    flush.console()
+    }
     repeat
     {
         for (j in (start + 1):(start + iterations))
         {
+			if (verbose)
+			    pbapply::setpb(pb, k)
             k = k + 1
-            if (verbose && k %% five.pct == 0)
-                cat("Progress => ", round(k / maxit * 100, 0), "%\n", sep = "")
             b = beta[j - 1, ]
             b_ = V %*% rnorm(p) + b
             gam = gamma[j - 1, ]
@@ -171,15 +177,21 @@ sparse.sglmm.fit.gaussian = function(Y, X, A, M, beta.start, offset, tol, minit,
         offset = rep(0, n)
     start = 1
     k = 1
-    five.pct = round(0.05 * maxit, 0)
     K = diag(1 / hyper$sigma.b^2, p)
+	if (verbose)
+	{
+	    pb = pbapply::startpb(0, maxit)
+	    on.exit(pbapply::closepb(pb))
+	    cat("\n")
+	    flush.console()
+    }
     repeat
     {
         for (j in (start + 1):(start + iterations))
         {
+			if (verbose)
+			    pbapply::setpb(pb, k)
             k = k + 1
-            if (verbose && k %% five.pct == 0)
-                cat("Progress => ", round(k / maxit * 100, 0), "%\n", sep = "")
             V = solve(K + tau.h[j - 1] * XtX)
             mu = V %*% (tau.h[j - 1] * t(X) %*% (Y - M %*% gamma[j - 1, ]))
             beta[j, ] = t(chol(V)) %*% rnorm(p) + mu
@@ -296,6 +308,198 @@ sparse.sglmm.fit.gaussian = function(Y, X, A, M, beta.start, offset, tol, minit,
     object
 }
 
+sparse.sglmm.fit.negbinomial = function(Y, X, A, M, family, beta.start, theta.start, V, offset, tol, minit, maxit, tune, hyper, verbose)
+{
+    iterations = minit
+    n = length(Y)
+    Q = t(M) %*% (diag(rowSums(A), n) - A) %*% M
+    p = ncol(X)
+    beta = matrix(0, iterations + 1, p)
+    beta[1, ] = beta.start
+	theta = numeric(iterations + 1)
+	theta[1] = theta.start
+    tau.s = numeric(iterations + 1)
+    tau.s[1] = 0.1
+    q = ncol(M)
+    gamma = matrix(0, iterations + 1, q)
+    gamma[1, ] = rnorm(q, 0, 1)
+    a.s = 0.5
+    b.s = 2000
+	sigma.theta = tune$sigma.theta
+	sigma.b = hyper$sigma.b
+	sigma.s = tune$sigma.s
+    linkinv = family$linkinv
+    if (is.null(offset))
+        offset = rep(0, n)
+    start = 1
+    k = 1
+	if (verbose)
+	{
+	    pb = pbapply::startpb(0, maxit)
+	    on.exit(pbapply::closepb(pb))
+	    cat("\n")
+	    flush.console()
+    }
+    repeat
+    {
+        for (j in (start + 1):(start + iterations))
+        {
+			if (verbose)
+			    pbapply::setpb(pb, k)
+            k = k + 1
+            b = beta[j - 1, ]
+            b_ = V %*% rnorm(p) + b
+            gam = gamma[j - 1, ]
+            eta_ = offset + X %*% b_ + M %*% gam
+			psi_ = linkinv(eta_) / (theta[j - 1] + linkinv(eta_))
+            eta = offset + X %*% b + M %*% gam
+			psi = linkinv(eta) / (theta[j - 1] + linkinv(eta))
+			logAlpha = t(Y) %*% (log(psi_) - log(psi))
+			logAlpha = logAlpha + theta[j - 1] * (sum(log(1 - psi_)) - sum(log(1 - psi)))
+            logAlpha = logAlpha + (sum(b^2) - sum(b_^2)) / (2 * sigma.b^2)
+            if (log(runif(1)) < logAlpha)
+                b = b_
+            beta[j, ] = b
+            gam_ = rnorm(q, 0, sigma.s) + gam
+            eta_ = offset + X %*% b + M %*% gam_
+			psi_ = linkinv(eta_) / (theta[j - 1] + linkinv(eta_))
+            eta = offset + X %*% b + M %*% gam
+			psi = linkinv(eta) / (theta[j - 1] + linkinv(eta))
+			logAlpha = t(Y) %*% (log(psi_) - log(psi))
+			logAlpha = logAlpha + theta[j - 1] * (sum(log(1 - psi_)) - sum(log(1 - psi)))
+            logAlpha = logAlpha + 0.5 * tau.s[j - 1] * (t(gam) %*% Q %*% gam - t(gam_) %*% Q %*% gam_)
+            if (log(runif(1)) < logAlpha)
+                gam = gam_
+            gamma[j, ] = gam
+            tau.s[j] = rgamma(1, a.s + q / 2, t(gam) %*% Q %*% gam / 2 + 1 / b.s)
+			theta_ = rnorm(1, 0, sigma.theta) + theta[j - 1]
+			if (theta_ > 0)
+			{
+			    eta = offset + X %*% b + M %*% gam
+			    psi_ = linkinv(eta) / (theta_ + linkinv(eta))
+			    psi = linkinv(eta) / (theta[j - 1] + linkinv(eta))
+			    logAlpha = sum(lgamma(theta_ + Y)) - sum(lgamma(theta[j - 1] + Y)) - n * (lgamma(theta_) - lgamma(theta[j - 1]))
+			    logAlpha = logAlpha + t(Y) %*% (log(psi_) - log(psi))
+			    logAlpha = logAlpha + theta_ * sum(log(1 - psi_)) - theta[j - 1] * sum(log(1 - psi))
+			    logAlpha = logAlpha + dgamma(theta_, a.s, 1 / b.s, log = TRUE) - dgamma(theta[j - 1], a.s, 1 / b.s, log = TRUE)
+                if (log(runif(1)) < logAlpha)
+                    theta[j] = theta_
+			    else
+				    theta[j] = theta[j - 1]
+			}
+			else
+				theta[j] = theta[j - 1]
+            if (j == maxit)
+                break
+        }
+        if (j == maxit)
+        {
+            beta = as.matrix(beta[1:maxit, ])
+            gamma = as.matrix(gamma[1:maxit, ])
+            tau.s = tau.s[1:maxit]
+			theta = theta[1:maxit]
+            break
+        }
+        done = TRUE
+        for (j in 1:p)
+        {
+            temp = bm(beta[, j])
+            if (temp$se > tol)
+            {
+                done = FALSE
+                break
+            }
+        }
+        if (done)
+        {
+            for (j in 1:q)
+            {
+                temp = bm(gamma[, j])
+                if (temp$se > tol)
+                {
+                    done = FALSE
+                    break
+                }
+            }
+        }
+        if (done)
+        {
+            temp = bm(tau.s)
+            if (temp$se > tol)
+                done = FALSE
+        }
+        if (done)
+        {
+            temp = bm(theta)
+            if (temp$se > tol)
+                done = FALSE
+        }
+        if (done)
+            break
+        else
+        {
+            start = start + iterations
+            temp = matrix(0, iterations, p)
+            beta = rbind(beta, temp)
+            temp = matrix(0, iterations, q)
+            gamma = rbind(gamma, temp)
+            tau.s = c(tau.s, rep(0, iterations))
+			theta = c(theta, rep(0, iterations))
+        }
+    }
+    coefficients = numeric(p)
+    beta.mcse = numeric(p)
+    names(coefficients) = names(beta.mcse) = colnames(X)
+    for (j in 1:p)
+    {
+        temp = bm(beta[, j])
+        coefficients[j] = temp$est
+        beta.mcse[j] = temp$se
+    }
+    gamma.est = numeric(q)
+    gamma.mcse = numeric(q)
+    for (j in 1:q)
+    {
+        temp = bm(gamma[, j])
+        gamma.est[j] = temp$est
+        gamma.mcse[j] = temp$se
+    }
+    temp = bm(tau.s)
+    tau.s.est = temp$est
+    tau.s.mcse = temp$se
+	temp = bm(theta)
+	theta.est = temp$est
+	theta.mcse = temp$se
+    linear.predictors = numeric(n)
+    fitted.values = numeric(n)
+    iter = length(tau.s)
+    v = numeric(iter)
+    for (j in 1:iter)
+    {
+        eta = offset + X %*% beta[j, ] + M %*% gamma[j, ]
+        linear.predictors = linear.predictors + eta / iter
+        mu = linkinv(eta)
+        fitted.values = fitted.values + mu / iter
+        v[j] = -2 * sum(dnbinom(Y, mu = mu, size = theta[j], log = TRUE))
+    }
+    D.bar = mean(v)
+    pD = D.bar + 2 * sum(dnbinom(Y, mu = fitted.values, size = theta.est, log = TRUE))
+    dic = D.bar + pD
+    residuals = Y - fitted.values
+    beta.accept = sum(diff(beta[, 1]) != 0) / iter
+    gamma.accept = sum(diff(gamma[, 1]) != 0) / iter
+	theta.accept = sum(diff(theta) != 0) / iter
+    object = list(coefficients = coefficients, fitted.values = fitted.values,
+                  linear.predictors = linear.predictors, residuals = residuals,
+                  beta.sample = beta, gamma.sample = gamma, tau.s.sample = tau.s, theta.sample = theta,
+                  beta.mcse = beta.mcse, gamma.mcse = gamma.mcse, tau.s.mcse = tau.s.mcse,
+                  gamma.est = gamma.est, tau.s.est = tau.s.est, theta.est = theta.est,
+				  theta.mcse = theta.mcse, theta.accept = theta.accept, iter = iter, dic = dic,
+                  D.bar = D.bar, pD = pD, beta.accept = beta.accept, gamma.accept = gamma.accept)
+    class(object) = c("sparse.sglmm")
+    object
+}
+
 sparse.sglmm.fit.poisson = function(Y, X, A, M, family, beta.start, V, offset, tol, minit, maxit, tune, hyper, verbose)
 {
     iterations = minit
@@ -331,16 +535,22 @@ sparse.sglmm.fit.poisson = function(Y, X, A, M, family, beta.start, V, offset, t
         offset = rep(0, n)
     start = 1
     k = 1
-    five.pct = round(0.05 * maxit, 0)
+	if (verbose)
+	{
+	    pb = pbapply::startpb(0, maxit)
+	    on.exit(pbapply::closepb(pb))
+	    cat("\n")
+	    flush.console()
+    }
     repeat
     {
         if (hetero)
         {
             for (j in (start + 1):(start + iterations))
             {
+				if (verbose)
+				    pbapply::setpb(pb, k)
                 k = k + 1
-                if (verbose && k %% five.pct == 0)
-                    cat("Progress => ", round(k / maxit * 100, 0), "%\n", sep = "")
                 b = beta[j - 1, ]
                 b_ = V %*% rnorm(p) + b
                 gam = gamma[j - 1, ]
@@ -381,9 +591,9 @@ sparse.sglmm.fit.poisson = function(Y, X, A, M, family, beta.start, V, offset, t
         {
             for (j in (start + 1):(start + iterations))
             {
+				if (verbose)
+				    pbapply::setpb(pb, k)
                 k = k + 1
-                if (verbose && k %% five.pct == 0)
-                    cat("Progress => ", round(k / maxit * 100, 0), "%\n", sep = "")
                 b = beta[j - 1, ]
                 b_ = V %*% rnorm(p) + b
                 gam = gamma[j - 1, ]
@@ -391,7 +601,7 @@ sparse.sglmm.fit.poisson = function(Y, X, A, M, family, beta.start, V, offset, t
                 eta = offset + X %*% b + M %*% gam
                 logAlpha = t(Y) %*% (log(linkinv(eta_)) - log(linkinv(eta)))
                 logAlpha = logAlpha + sum(linkinv(eta)) - sum(linkinv(eta_))
-                logAlpha = logAlpha + (sum(b^2) - sum(b_^2)) / 2000000
+                logAlpha = logAlpha + (sum(b^2) - sum(b_^2)) / (2 * sigma.b^2)
                 if (log(runif(1)) < logAlpha)
                     b = b_
                 beta[j, ] = b
@@ -546,23 +756,25 @@ sparse.sglmm.fit.poisson = function(Y, X, A, M, family, beta.start, V, offset, t
 
 #' Fit a sparse SGLMM.
 #'
-#' @details This function fits the sparse areal SGLMM of Hughes and Haran (2013). The first stage of the model is \deqn{g(\mu_i)=x_i^\prime\beta+m_i^\prime\gamma\hspace{1 cm}(i=1,\dots,n)}{g(\mu_i)=x_i'\beta+m_i'\gamma   (i=1,\dots,n)} or, in vectorized form, \deqn{g(\mu)=X\beta+M\gamma,} where \eqn{X} is the design matrix, \eqn{\beta} is a \eqn{p}-vector of regression coefficients, the columns of \eqn{M} are \eqn{q} eigenvectors of the Moran operator, and \eqn{\gamma} are spatial random effects. Arguments \code{attractive} and \code{repulsive} can be used to control the number of eigenvectors used. The default values are 50 and 0, respectively, which corresponds to pure spatial smoothing. Inclusion of some repulsive eigenvectors can be advantageous in certain applications.\cr\cr The second stage, i.e., the prior for \eqn{\gamma}, is \deqn{p(\gamma\mid\tau_s)\propto\tau_s^{q/2}\exp\left(-\frac{\tau_s}{2}\gamma^\prime M^\prime QM\gamma\right),}{p(\gamma | \tau_s) proportional to \tau_s^(q/2)exp(-\tau_s/2 \gamma'M'QM\gamma'),} where \eqn{\tau_s} is a smoothing parameter and \eqn{Q} is the graph Laplacian.\cr\cr The prior for \eqn{\beta} is spherical \eqn{p}-variate normal with mean zero and common standard deviation \code{sigma.b}, which defaults to 1,000. The prior for \eqn{\tau_s} is gamma with parameters 0.5 and 2,000.\cr\cr When the response is normally distributed, the identity link is assumed, in which case the first stage is \deqn{\mu=X\beta+M\gamma+M\delta,} where \eqn{\delta} are heterogeneity random effects. When the response is Poisson distributed, heterogeneity random effects are optional. In any case, the prior on \eqn{\delta} is spherical \eqn{q}-variate normal with mean zero and common variance \eqn{1/\tau_h}. The prior for \eqn{\tau_h} is gamma with parameters \eqn{a_h} and \eqn{b_h}, the values of which are controlled by the user through argument \code{hyper}.\cr\cr If the response is Bernoulli or Poisson, \eqn{\beta} and \eqn{\gamma} are updated using Metropolis-Hastings random walks with normal proposals. The proposal covariance matrix for \eqn{\beta} is the estimated asymptotic covariance matrix from a \code{\link{glm}} fit to the data (see \code{\link{vcov}}). The proposal for \eqn{\gamma} is spherical normal with common standard deviation \code{sigma.s}.\cr\cr The updates for \eqn{\tau_s} and \eqn{\tau_h} are Gibbs updates irrespective of the response distribution.\cr\cr If the response is Poisson distributed and heterogeneity random effects are included, those random effects are updated using a Metropolis-Hastings random walk with a spherical normal proposal. The common standard deviation is \code{sigma.h}.\cr\cr If the response is normally distributed, all updates are Gibbs updates.
+#' @details This function fits the sparse restricted spatial regression model of Hughes and Haran (2013), or the Bayesian spatial filtering model of Hughes (2017). The first stage of the model is \deqn{g(\mu_i)=x_i^\prime\beta+m_i^\prime\gamma\hspace{1 cm}(i=1,\dots,n)}{g(\mu_i)=x_i'\beta+m_i'\gamma   (i=1,\dots,n)} or, in vectorized form, \deqn{g(\mu)=X\beta+M\gamma,} where \eqn{X} is the design matrix, \eqn{\beta} is a \eqn{p}-vector of regression coefficients, the columns of \eqn{M} are \eqn{q} eigenvectors of the Moran operator, and \eqn{\gamma} are spatial random effects. Arguments \code{attractive} and \code{repulsive} can be used to control the number of eigenvectors used. The default values are 50 and 0, respectively, which corresponds to pure spatial smoothing. Inclusion of some repulsive eigenvectors can be advantageous in certain applications.\cr\cr The second stage, i.e., the prior for \eqn{\gamma}, is \deqn{p(\gamma\mid\tau_s)\propto\tau_s^{q/2}\exp\left(-\frac{\tau_s}{2}\gamma^\prime M^\prime QM\gamma\right),}{p(\gamma | \tau_s) proportional to \tau_s^(q/2)exp(-\tau_s/2 \gamma'M'QM\gamma'),} where \eqn{\tau_s} is a smoothing parameter and \eqn{Q} is the graph Laplacian.\cr\cr The prior for \eqn{\beta} is spherical \eqn{p}-variate normal with mean zero and common standard deviation \code{sigma.b}, which defaults to 1,000. The prior for \eqn{\tau_s} is gamma with parameters 0.5 and 2,000. The same prior is used for \eqn{\theta} (when family is \code{negbinomial}).\cr\cr When the response is normally distributed, the identity link is assumed, in which case the first stage is \deqn{\mu=X\beta+M\gamma+M\delta,} where \eqn{\delta} are heterogeneity random effects. When the response is Poisson distributed, heterogeneity random effects are optional. In any case, the prior on \eqn{\delta} is spherical \eqn{q}-variate normal with mean zero and common variance \eqn{1/\tau_h}. The prior for \eqn{\tau_h} is gamma with parameters \eqn{a_h} and \eqn{b_h}, the values of which are controlled by the user through argument \code{hyper}.\cr\cr If the response is Bernoulli, negative binomial, or Poisson, \eqn{\beta} and \eqn{\gamma} are updated using Metropolis-Hastings random walks with normal proposals. The proposal covariance matrix for \eqn{\beta} is the estimated asymptotic covariance matrix from a \code{\link{glm}} fit to the data (see \code{\link{vcov}}). The proposal for \eqn{\gamma} is spherical normal with common standard deviation \code{sigma.s}.\cr\cr The updates for \eqn{\tau_s} and \eqn{\tau_h} are Gibbs updates irrespective of the response distribution.\cr\cr If the response is Poisson distributed and heterogeneity random effects are included, those random effects are updated using a Metropolis-Hastings random walk with a spherical normal proposal. The common standard deviation is \code{sigma.h}.\cr\cr If the response is normally distributed, all updates are Gibbs updates.\cr\cr If the response is negative binomial, the dispersion parameter \eqn{\theta} is updated using a Metropolis-Hastings random walk with a normal proposal. Said proposal has standard deviation \code{sigma.theta}, which can be provided by the user as an element of argument \code{tune}.
 #' @param formula an object of class \code{\link{formula}}: a symbolic description of the model to be fitted.
-#' @param family a description of the error distribution and link function to be used in the model. This can be a character string naming a family function, a family function, or the result of a call to a family function. (See \code{\link{family}} for details of family functions.) Supported families are \code{gaussian} (default), \code{binomial}, and \code{poisson}.
+#' @param family a description of the error distribution and link function to be used in the model. This can be a character string naming a family function, a family function, or the result of a call to a family function. (See \code{\link{family}} for details of family functions.) Supported families are \code{binomial}, \code{gaussian} (default), \code{negbinomial}, and \code{poisson}.
 #' @param data an optional data frame, list, or environment (or object coercible by \code{\link{as.data.frame}} to a data frame) containing the variables in the model. If not found in \code{data}, the variables are taken from \code{environment(formula)}, typically the environment from which \code{sparse.sglmm} is called.
 #' @param offset this can be used to specify an \emph{a priori} known component to be included in the linear predictor during fitting. This should be \code{NULL} or a numeric vector of length equal to the number of cases. One or more \code{\link{offset}} terms can be included in the formula instead or as well, and if more than one is specified their sum is used. See \code{\link{model.offset}}.
 #' @param A the adjacency matrix for the underlying graph.
+#' @param method the basis to use. The options are Bayesian spatial filtering (\dQuote{\code{BSF}}) and restricted spatial regression (\dQuote{\code{RSR}}).
 #' @param attractive the number of attractive Moran eigenvectors to use. The default is 50. See `Details' for more information.
 #' @param repulsive the number of repulsive Moran eigenvectors to use. The default is 0. See `Details' for more information.
 #' @param tol a tolerance. If all Monte Carlo standard errors are smaller than \code{tol}, no more samples are drawn from the posterior. The default is 0.01.
 #' @param minit the minimum sample size. This should be large enough to permit accurate estimation of Monte Carlo standard errors. The default is 10,000.
 #' @param maxit the maximum sample size. Sampling from the posterior terminates when all Monte Carlo standard errors are smaller than \code{tol} or when \code{maxit} samples have been drawn, whichever happens first. The default is 1,000,000.
-#' @param tune (where relevant) a list containing \code{sigma.s} and \code{sigma.h}. These are the standard deviations for the \eqn{\gamma} and \eqn{\delta} proposals, respectively.
-#' @param hyper a list containing \code{sigma.b}, the prior standard deviation for \eqn{\beta}, and (where relevant)  \code{a.h} and \code{b.h}, the parameters of the gamma prior for \eqn{\tau_h}.
+#' @param tune (where relevant) a list containing \code{sigma.s}, \code{sigma.h}, and \code{sigma.theta}. These are the standard deviations for the \eqn{\gamma}, \eqn{\delta}, and \eqn{\theta} proposals, respectively.
+#' @param hyper a list containing \code{sigma.b}, the prior standard deviation for \eqn{\beta}, and (where relevant) \code{a.h} and \code{b.h}, the parameters of the gamma prior for \eqn{\tau_h}.
 #' @param model a logical value indicating whether the model frame should be included as a component of the returned value.
 #' @param x a logical value indicating whether the model matrix used in the fitting process should be returned as a component of the returned value.
 #' @param y a logical value indicating whether the response vector used in the fitting process should be returned as a component of the returned value.
 #' @param verbose a logical value indicating whether to print MCMC progress to the screen. Defaults to \code{FALSE}.
+#' @param parallel (for parallelized computation of the Moran operator) a list containing \code{type} and \code{nodes}, the cluster type and number of slave nodes, respectively. The former must be one of \dQuote{\code{FORK}}, \dQuote{\code{MPI}}, \dQuote{\code{NWS}}, \dQuote{\code{PSOCK}}, or \dQuote{\code{SOCK}} (default). The latter must be a whole number greater than 1. This argument defaults to \code{FALSE}, in which case the matrix multiplications are not parallelized.
 #' @return \code{sparse.sglmm} returns an object of class \dQuote{\code{sparse.sglmm}}, which is a list containing the following components.
 #'         \item{coefficients}{the estimated regression coefficients.}
 #'         \item{fitted.values}{the fitted mean values, obtained by transforming the linear predictors by the inverse of the link function.}
@@ -572,23 +784,27 @@ sparse.sglmm.fit.poisson = function(Y, X, A, M, family, beta.start, V, offset, t
 #'         \item{beta.sample}{an \code{iter} by \eqn{p} matrix containing the posterior samples for \eqn{\beta}.}
 #'         \item{gamma.sample}{an \code{iter} by \eqn{q} matrix containing the posterior samples for \eqn{\gamma}.}
 #'         \item{delta.sample}{(where relevant) an \code{iter} by \eqn{q} matrix containing the posterior samples for \eqn{\delta}.}
+#'         \item{theta.sample}{(where relevant) a vector containing the posterior samples for \eqn{\theta}.}
 #'         \item{tau.s.sample}{a vector containing the posterior samples for \eqn{\tau_s}.}
 #'         \item{tau.h.sample}{(where relevant) a vector containing the posterior samples for \eqn{\tau_h}.}
 #'         \item{gamma.est}{the estimate of \eqn{\gamma}.}
 #'         \item{delta.est}{(where relevant) the estimate of \eqn{\delta}.}
 #'         \item{tau.s.est}{the estimate of \eqn{\tau_s}.}
 #'         \item{tau.h.est}{(where relevant) the estimate of \eqn{\tau_h}.}
+#'         \item{theta.est}{(where relevant) the estimate of \eqn{\theta}.}
 #'         \item{beta.mcse}{the Monte Carlo standard errors for \eqn{\beta}.}
 #'         \item{gamma.mcse}{the Monte Carlo standard errors for \eqn{\gamma}.}
 #'         \item{delta.mcse}{(where relevant) the Monte Carlo standard errors for \eqn{\delta}.}
 #'         \item{tau.s.mcse}{the Monte Carlo standard error for \eqn{\tau_s}.}
 #'         \item{tau.h.mcse}{(where relevant) the Monte Carlo standard error for \eqn{\tau_h}.}
+#'         \item{theta.mcse}{(where relevant) the Monte Carlo standard error for \eqn{\theta}.}
 #'         \item{D.bar}{the goodness of fit component of the DIC.}
 #'         \item{pD}{the penalty component of the DIC.}
 #'         \item{dic}{the deviance information criterion.}
 #'         \item{beta.accept}{the acceptance rate for \eqn{\beta}.}
 #'         \item{gamma.accept}{the acceptance rate for \eqn{\gamma}.}
 #'         \item{delta.accept}{(where relevant) the acceptance rate for \eqn{\delta}.}
+#'         \item{theta.accept}{(where relevant) the acceptance rate for \eqn{\theta}.}
 #'         \item{y}{if requested (the default), the \code{y} vector used.}
 #'         \item{X}{if requested, the model matrix.}
 #'         \item{M}{if requested, the matrix of Moran eigenvectors.}
@@ -618,15 +834,15 @@ sparse.sglmm.fit.poisson = function(Y, X, A, M, family, beta.start, V, offset, t
 #' X = cbind(1, low_weight, black, hispanic, gini, affluence, stability)
 #' data(A)
 #' set.seed(123456)
-#' fit = sparse.sglmm(Z ~ X - 1 + offset(log(births)), family = poisson, A = A,
+#' fit = sparse.sglmm(Z ~ X - 1 + offset(log(births)), family = poisson, A = A, method = "RSR",
 #'                    tune = list(sigma.s = 0.02), verbose = TRUE)
 #' summary(fit)
 #' } 
 
-sparse.sglmm = function(formula, family = gaussian, data, offset, A, attractive = 50, repulsive = 0, tol = 0.01, minit = 10000,
-	                    maxit = 1000000, tune = list(), hyper = list(), model = TRUE, x = FALSE, y = FALSE, verbose = FALSE)
+sparse.sglmm = function(formula, family = gaussian, data, offset, A, method = c("BSF", "RSR"), attractive = 50, repulsive = 0, tol = 0.01, minit = 10000,
+	                    maxit = 1000000, tune = list(), hyper = list(), model = TRUE, x = FALSE, y = FALSE, verbose = FALSE, parallel = FALSE)
 {
-    cl = match.call()
+    call = match.call()
     if (is.character(family)) 
         family = get(family, mode = "function", envir = parent.frame())
     if (is.function(family)) 
@@ -641,13 +857,14 @@ sparse.sglmm = function(formula, family = gaussian, data, offset, A, attractive 
     nonspat = if (missing(offset)) glm(formula, family, data)
               else glm(formula, family, data, offset = offset)
     wts = 1 / sqrt(weights(nonspat, type = "working"))
-    if (! family$family %in% c("binomial", "gaussian", "poisson"))
-        stop("'family' must be binomial, gaussian, or poisson.")
+    if (! family$family %in% c("binomial", "gaussian", "negbinomial", "poisson"))
+        stop("'family' must be binomial, gaussian, negbinomial, or poisson.")
     if (family$family == "gaussian" && family$link != "identity")
         stop("For the gaussian family, only the identity link is supported.")
     if (missing(A) || ! is.matrix(A) || ! isSymmetric(A) || ! (A == 0 || A == 1))
         stop("You must supply a symmetric binary adjacency matrix.")
     diag(A) = 0
+	method = match.arg(method)
     if (! is.numeric(tol) || length(tol) > 1 || tol <= 0 || tol >= 1)
         stop("'tol' must be a number between 0 and 1.")
     if (! is.numeric(minit) || length(minit) > 1 || ! is.wholenumber(minit) || minit < 1)
@@ -656,6 +873,11 @@ sparse.sglmm = function(formula, family = gaussian, data, offset, A, attractive 
         stop("\n'maxit' must be a positive whole number greater than or equal to 'minit'.")
     if (! is.list(tune))
         stop("'tune' must be a list.")
+	if (is.null(verbose) || ! is.logical(verbose) || length(verbose) > 1)
+    {
+        cat("\nParameter 'verbose' must be a logical value. Setting it to the default value of FALSE.\n")
+        verbose = FALSE
+    }
     if (family$family != "gaussian")
     {
     	sigma.s = tune$sigma.s
@@ -687,6 +909,17 @@ sparse.sglmm = function(formula, family = gaussian, data, offset, A, attractive 
             cat("\nTuning parameter 'sigma.h' must be a positive number. Setting it to the default value of 0.01.\n")
         sigma.h = 0.01
     }
+	if (family$family == "negbinomial")
+	{
+	    sigma.theta = tune$sigma.theta
+    	if (is.null(sigma.theta) || ! is.numeric(sigma.theta) || length(sigma.theta) > 1 || sigma.theta <= 0)
+        {
+		    if (verbose)
+                cat("\nTuning parameter 'sigma.theta' must be a positive number. Setting it to the default value of 0.01.\n")
+            sigma.theta = 0.01
+        }
+		tune.new$sigma.theta = sigma.theta
+	}
     a.h = hyper$a.h
     b.h = hyper$b.h
     if (family$family == "gaussian" || (family$family == "poisson" && ! is.null(tune$sigma.h)))
@@ -713,6 +946,26 @@ sparse.sglmm = function(formula, family = gaussian, data, offset, A, attractive 
     }
     tune = tune.new
     hyper = hyper.new
+    if (is.list(parallel))
+	{
+	    if (requireNamespace("parallel", quietly = TRUE))
+        {
+            if (is.null(parallel$type) || length(parallel$type) > 1 || ! parallel$type %in% c("SOCK", "PSOCK", "FORK", "MPI", "NWS"))
+            {
+                if (verbose)
+                    cat("\nParallel parameter 'type' must be \"SOCK\", \"PSOCK\", \"FORK\", \"MPI\", or \"NWS\". Setting it to \"SOCK\".\n")
+                parallel$type = "SOCK"
+            }
+            if (is.null(parallel$nodes) || ! is.numeric(parallel$nodes) || length(parallel$nodes) > 1 || ! is.wholenumber(parallel$nodes) || parallel$nodes < 2)
+                stop("Parallel parameter 'nodes' must be a whole number greater than 1.")
+        }
+		else
+		{
+            if (verbose)
+                cat("\nParallel computation requires package parallel. Setting parameter 'parallel' to FALSE.\n")
+			parallel = FALSE
+		}
+	}
     mf = match.call(expand.dots = FALSE)
     m = match(c("formula", "data", "offset"), names(mf), 0)
     mf = mf[c(1, m)]
@@ -720,9 +973,15 @@ sparse.sglmm = function(formula, family = gaussian, data, offset, A, attractive 
     mf = eval(mf, parent.frame())
     mt = attr(mf, "terms")
     Y = model.response(mf, "numeric")
+    if (family$family == "binomial" && ! (Y == 0 || Y == 1))
+        stop("The response must be binary if 'family' is binomial.")
+	if (family$family %in% c("poisson", "negbinomial") && ! all(Y >= 0 & (Y == as.integer(Y))))
+		stop("The outcomes must be non-negative integers if 'family' is poisson or negbinomial.")
     n = length(Y)
     offset = as.vector(model.offset(mf))
     X = diag(wts, n) %*% model.matrix(mt, mf)
+	if (method == "BSF")
+		X = as.matrix(rep(1, n))
     P = diag(1, n) - X %*% solve(t(X) %*% X) %*% t(X)
     X = model.matrix(mt, mf)
     if (sum(c(nrow(X), nrow(A)) != length(Y)) > 0)
@@ -730,12 +989,18 @@ sparse.sglmm = function(formula, family = gaussian, data, offset, A, attractive 
     if (! is.logical(verbose) || length(verbose) > 1)
         stop("'verbose' must be a logical value.")
     if (verbose)
-    {
-        cat("\nThe Moran operator is being eigendecomposed. This operation may be time consuming.\n")
-        flush.console()
-        Sys.sleep(0.5)
-    }
-    eig = eigen(P %*% A %*% P, symmetric = TRUE)
+        cat("\nWarning: The Moran operator is being computed and eigendecomposed. These operations may be time consuming.\n")
+	flush.console()
+	if (! is.list(parallel))
+        eig = eigen(P %*% A %*% P, symmetric = TRUE)
+	else
+	{
+        cl = parallel::makeCluster(parallel$nodes, parallel$type)
+		M = matmult.par(cl, matmult.par(cl, P, A), P)
+		parallel::stopCluster(cl)
+        eig = eigen(M, symmetric = TRUE)
+		rm(M)
+	}
     eigenvalues = eig$values
     maxatt = match(TRUE, sapply(eigenvalues, is.zero)) - 1
     if (! is.numeric(attractive) || length(attractive) > 1 || ! is.wholenumber(attractive) || attractive < 1 || attractive > maxatt)
@@ -753,18 +1018,17 @@ sparse.sglmm = function(formula, family = gaussian, data, offset, A, attractive 
     rm(eig)
     V = t(chol(vcov(nonspat)))
     if (verbose)
-    {
-        cat("\nWarning: MCMC may be time consuming.\n\n")
-        flush.console()
-        Sys.sleep(0.5)
-    }
+        cat("\nWarning: MCMC may be time consuming.\n")
+	flush.console()
     fit = if (family$family == "binomial")
               sparse.sglmm.fit.binomial(Y, X, A, M, family, nonspat$coef, V, offset, tol, minit, maxit, tune$sigma.s, hyper$sigma.b, verbose)
           else if (family$family == "gaussian")
               sparse.sglmm.fit.gaussian(Y, X, A, M, nonspat$coef, offset, tol, minit, maxit, hyper, verbose)
+		  else if (family$family == "negbinomial")
+			  sparse.sglmm.fit.negbinomial(Y, X, A, M, family, nonspat$coef, family$theta, V, offset, tol, minit, maxit, tune, hyper, verbose)
           else sparse.sglmm.fit.poisson(Y, X, A, M, family, nonspat$coef, V, offset, tol, minit, maxit, tune, hyper, verbose)
     fit$xlevels = .getXlevels(mt, mf)
-    fit$call = cl
+    fit$call = call
     fit$terms = mt
     fit$formula = formula
     fit$family = family

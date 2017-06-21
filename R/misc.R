@@ -71,3 +71,74 @@ is.zero = function(x, tol = .Machine$double.eps^0.5)
     abs(x) < tol
 }
 
+matmult.par = function(cl, A, B)
+{
+    if (ncol(A) != nrow(B))
+        stop("The supplied matrices are not conformable.")
+    ind = parallel::splitIndices(nrow(A), length(cl))
+	Alist = lapply(ind, function(ii) A[ii, , drop = FALSE])
+	ans = parallel::clusterApply(cl, Alist, get("%*%"), B)
+	do.call(rbind, ans)
+}
+
+#' Family function for negative binomial GLMs.
+#'
+#' @description Provides the information required to apply a sparse SGLMM to conditionally negative binomial outcomes.
+#'
+#' @usage negbinomial(theta = stop("'theta' must be specified."), link = "log")
+#'
+#' @param theta the dispersion parameter (must be positive).
+#' @param link the link function, as a character string, name, or one-element character vector, specifying one of \code{log}, \code{sqrt}, or \code{identity}, or an object of class \dQuote{\code{\link[=family]{link-glm}}}
+#'
+#' @return An object of class \dQuote{\code{family}}, a list of functions and expressions needed to fit a negative binomial GLM.
+#'
+#' @export
+
+negbinomial = function(theta = stop("'theta' must be specified."), link = "log") 
+{
+    if (! is.vector(theta, mode = "numeric") || length(theta) > 1)
+        stop("You must supply a scalar value for 'theta'.")
+    if (theta <= 0)
+        stop("'theta' must be positive.")
+    linktemp = substitute(link)
+    if (! is.character(linktemp)) 
+        linktemp = deparse(linktemp)
+    if (linktemp %in% c("log", "identity", "sqrt")) 
+        stats = make.link(linktemp)
+    else if (is.character(link))
+    {
+        stats = make.link(link)
+        linktemp = link
+    }
+    else
+    {
+        if (inherits(link, "link-glm"))
+        {
+            stats = link
+            if (! is.null(stats$name)) 
+                linktemp = stats$name
+        }
+        else stop(gettextf("\"%s\" link not available for negative binomial family; available links are \"identity\", \"log\" and \"sqrt\"", linktemp))
+    }
+    variance = function(mu) mu + mu^2 / theta
+    validmu = function(mu) all(mu > 0)
+    dev.resids = function(y, mu, wt) 2 * wt * (y * log(pmax(1, y) / mu) - (y + theta) * log((y + theta) / (mu + theta)))
+    aic = function(y, n, mu, wt, dev)
+    {
+        term = (y + theta) * log(mu + theta) - y * log(mu) + lgamma(y + 1) - theta * log(theta) + lgamma(theta) - lgamma(theta + y)
+        2 * sum(term * wt)
+    }
+    initialize = expression({
+        if (any(y < 0))
+            stop("negative values not allowed for the negative binomial family")
+        n = rep(1, nobs)
+        mustart = y + (y == 0) / 6
+    })
+    famname = "negbinomial"
+    structure(list(family = famname, link = linktemp, linkfun = stats$linkfun, 
+        linkinv = stats$linkinv, variance = variance, dev.resids = dev.resids, 
+        aic = aic, mu.eta = stats$mu.eta, initialize = initialize, theta = theta,
+        validmu = validmu, valideta = stats$valideta), 
+        class = "family")
+}
+

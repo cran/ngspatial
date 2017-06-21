@@ -36,18 +36,6 @@ x = rep(0:(n - 1) / (n - 1), times = n) - 0.5
 y = rep(0:(n - 1) / (n - 1), each = n) - 0.5
 X = cbind(x, y)                                 # Use the vertex locations as spatial covariates.
 beta = c(2, 2)                                  # These are the regression coefficients.
-mu = exp(X \%*\% beta)
-mu = mu / (1 + mu)                              # Compute the independence expectations.
-col1 = "white"
-col2 = "black"
-colfunc = colorRampPalette(c(col1, col2))
-
-# Now produce a level plot of the independence expectations. This shows that the large-scale
-# structure corresponds to a probability gradient that increases as one moves from southwest
-# to northeast.
-
-dev.new()
-levelplot(mu ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
 
 # Simulate a dataset with the above mentioned regression component and eta equal to 0.6. This
 # value of eta corresponds to dependence that is moderate in strength.
@@ -55,11 +43,6 @@ levelplot(mu ~ x * y, aspect = "iso", col.regions = colfunc(n^2))
 theta = c(beta, eta = 0.6)
 set.seed(123456)
 Z = rautologistic(X, A, theta)
-
-# Create a level plot of the simulated data.
-
-dev.new()
-levelplot(Z ~ x * y, aspect = "iso", col.regions = c("white", "black"), colorkey = FALSE) 
 }
 \references{
 Moller, J. (1999) Perfect simulation of conditionally specified models. \emph{Journal of the Royal Statistical Society, Series B, Methodological}, \bold{61}, 251--264.

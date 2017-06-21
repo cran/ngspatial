@@ -16,6 +16,6 @@ import(batchmeans)
 importFrom(stats, .getXlevels, binomial, cov, dbinom,
              dnorm, dpois, gaussian, glm, model.matrix,
              model.offset, model.response, optim, qnorm,
-             quantile, rgamma, rnorm, runif, vcov, weights)
+             quantile, rgamma, rnorm, runif, vcov, weights,
+			 dgamma, dnbinom, make.link)
 importFrom(utils, flush.console, packageDescription)
-importFrom(lattice, levelplot)
