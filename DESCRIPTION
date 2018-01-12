@@ -1,6 +1,6 @@
 Package: ngspatial
-Version: 1.2
-Date: 2017-06-21
+Version: 1.2-1
+Date: 2018-01-12
 Title: Fitting the Centered Autologistic and Sparse Spatial Generalized
         Linear Mixed Models for Areal Data
 Type: Package
@@ -18,6 +18,6 @@ LinkingTo: Rcpp, RcppArmadillo
 RcppModules: ngspatialmod
 RoxygenNote: 5.0.1
 NeedsCompilation: yes
-Packaged: 2017-06-21 18:56:35 UTC; hughej
+Packaged: 2018-01-12 18:41:40 UTC; jphughesjr
 Repository: CRAN
-Date/Publication: 2017-06-21 19:29:38 UTC
+Date/Publication: 2018-01-12 18:55:42 UTC

@@ -11,6 +11,7 @@ export(adjacency.matrix)
 export(autologistic)
 export(rautologistic)
 export(sparse.sglmm)
+export(negbinomial)
 import(Rcpp)
 import(batchmeans)
 importFrom(stats, .getXlevels, binomial, cov, dbinom,
