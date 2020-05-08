@@ -861,7 +861,7 @@ sparse.sglmm = function(formula, family = gaussian, data, offset, A, method = c(
         stop("'family' must be binomial, gaussian, negbinomial, or poisson.")
     if (family$family == "gaussian" && family$link != "identity")
         stop("For the gaussian family, only the identity link is supported.")
-    if (missing(A) || ! is.matrix(A) || ! isSymmetric(A) || ! (A == 0 || A == 1))
+    if (missing(A) || ! is.matrix(A) || ! isSymmetric(A) || ! all(A == 0 | A == 1))
         stop("You must supply a symmetric binary adjacency matrix.")
     diag(A) = 0
 	method = match.arg(method)
@@ -973,7 +973,7 @@ sparse.sglmm = function(formula, family = gaussian, data, offset, A, method = c(
     mf = eval(mf, parent.frame())
     mt = attr(mf, "terms")
     Y = model.response(mf, "numeric")
-    if (family$family == "binomial" && ! (Y == 0 || Y == 1))
+    if (family$family == "binomial" && ! all(Y == 0 | Y == 1))
         stop("The response must be binary if 'family' is binomial.")
 	if (family$family %in% c("poisson", "negbinomial") && ! all(Y >= 0 & (Y == as.integer(Y))))
 		stop("The outcomes must be non-negative integers if 'family' is poisson or negbinomial.")

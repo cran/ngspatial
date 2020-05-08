@@ -1,11 +1,11 @@
 Package: ngspatial
-Version: 1.2-1
-Date: 2018-01-12
+Version: 1.2-2
+Date: 2020-05-08
 Title: Fitting the Centered Autologistic and Sparse Spatial Generalized
         Linear Mixed Models for Areal Data
 Type: Package
-Author: John Hughes <jphughesjr@gmail.com> and Xiaohui Cui
-Maintainer: John Hughes <jphughesjr@gmail.com>
+Author: John Hughes <drjphughesjr@gmail.com> and Xiaohui Cui
+Maintainer: John Hughes <drjphughesjr@gmail.com>
 Depends: Rcpp, batchmeans
 Suggests: parallel, pbapply
 Description: Provides tools for analyzing spatial data, especially non-
@@ -18,6 +18,6 @@ LinkingTo: Rcpp, RcppArmadillo
 RcppModules: ngspatialmod
 RoxygenNote: 5.0.1
 NeedsCompilation: yes
-Packaged: 2018-01-12 18:41:40 UTC; jphughesjr
+Packaged: 2020-05-08 13:33:18 UTC; jphughesjr
 Repository: CRAN
-Date/Publication: 2018-01-12 18:55:42 UTC
+Date/Publication: 2020-05-08 16:10:03 UTC
